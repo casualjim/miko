@@ -1,0 +1,41 @@
+{
+  "emmet.includeLanguages": {
+    "rust": "html",
+    "*.rs": "html"
+  },
+  "tailwindCSS.includeLanguages": {
+    "rust": "html",
+    "*.rs": "html"
+  },
+  "files.associations": {
+    "*.rs": "rust"
+  },
+  "[sql]": {
+    "editor.defaultFormatter": "mtxr.sqltools"
+  },
+  "rust-analyzer.rustfmt.overrideCommand": [
+    "leptosfmt",
+    "--stdin",
+    "--rustfmt"
+  ],
+  "rust-analyzer.cargo.features": [
+    "ssr",
+    "hydrate"
+  ],
+  "rust-analyzer.check.features": [
+    "ssr",
+    "hydrate"
+  ],
+  "sqltools.connections": [
+    {
+      "previewLimit": 50,
+      "server": "localhost",
+      "port": 5432,
+      "driver": "PostgreSQL",
+      "name": "Local",
+      "database": "miko",
+      "username": "postgres",
+      "password": ""
+    }
+  ],
+}

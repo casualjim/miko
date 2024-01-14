@@ -14,7 +14,7 @@ async fn main() -> anyhow::Result<()> {
   use sqlx::PgPool;
   use uuid::Uuid;
 
-  simple_logger::init_with_level(log::Level::Debug).expect("couldn't initialize logging");
+  pretty_env_logger::init();
 
   let database_url = ::dotenvy::var("MIKO_DATABASE_URL").expect("MIKO_DATABASE_URL must be set");
   log::info!("Connecting to database with {}.", &database_url);

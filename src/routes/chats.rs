@@ -33,7 +33,7 @@ pub async fn get_chats() -> Result<Vec<Chat>, ServerFnError> {
 }
 
 #[server(GenerateTitle, "/bff")]
-pub async fn generate_title(id: Uuid, prompt: String) -> Result<String, ServerFnError> {
+pub async fn generate_title(_id: Uuid, prompt: String) -> Result<String, ServerFnError> {
   let auth = auth()?;
   if auth.current_user.is_none() {
     return Err(ServerFnError::ServerError("Not authenticated.".into()));

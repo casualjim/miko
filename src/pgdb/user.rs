@@ -138,7 +138,7 @@ impl UserInfo {
       given_name,
     }: UserInfo,
   ) -> Result<AppUser> {
-    let res = sqlx::query_file_as!(
+    sqlx::query_file_as!(
       UserInfo,
       "queries/upsert_user_account.sql",
       email,

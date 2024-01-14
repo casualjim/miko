@@ -64,6 +64,7 @@ pub fn App() -> impl IntoView {
   // Provides context that manages stylesheets, titles, meta tags, etc.
   provide_meta_context();
 
+  #[allow(unused_variables)]
   let (is_dark, set_is_dark) = create_signal(true);
   cfg_if! { if #[cfg(feature="hydrate")] {
     if let Ok(stored_dark_mode) = LocalStorage::get::<bool>("miko-dark-mode") {

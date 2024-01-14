@@ -1,13 +1,13 @@
 use leptos::*;
-use phosphor_leptos::{DownloadSimple, FilePlus, IconWeight};
+use phosphor_leptos::{FilePlus, IconWeight};
 
 use crate::models::Chat;
 
 type ChatsResource = Resource<(), Result<Vec<Chat>, ServerFnError>>;
 
 #[component]
+#[allow(unused_variables)]
 pub fn Workspace(chats: ChatsResource) -> impl IntoView {
-  let chats_loaded = move || !chats.loading().get();
   view! {
     <div class="p-2">
       <div class="flex w-full items-center justify-between space-x-1 px-2">

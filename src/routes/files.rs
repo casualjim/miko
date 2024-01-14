@@ -1,14 +1,12 @@
-use std::path::Path;
-
 use cfg_if::cfg_if;
 use leptos::*;
 
-use crate::{app, models::UploadedFile};
+use crate::models::UploadedFile;
 
 cfg_if! {
   if #[cfg(feature = "ssr")] {
     use crate::Result;
-    use crate::app::{auth,app_state,pool};
+    use crate::app::{auth,app_state};
   }
 }
 

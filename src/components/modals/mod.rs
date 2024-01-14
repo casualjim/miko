@@ -1,3 +1,3 @@
 mod logout;
 
-pub use logout::{LogoutAction, LogoutModal};
+pub use logout::LogoutModal;

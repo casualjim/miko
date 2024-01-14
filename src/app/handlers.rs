@@ -1,5 +1,4 @@
 use cfg_if::cfg_if;
-use leptos::*;
 
 cfg_if! {
   if #[cfg(feature="ssr")] {
@@ -11,6 +10,7 @@ use axum::{
     body::Body as AxumBody,
 };
 
+use leptos::*;
 use leptos_axum::handle_server_fns_with_context;
 use axum_session_auth::SessionPgPool;
 use sqlx::PgPool;

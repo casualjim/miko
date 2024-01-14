@@ -14,7 +14,7 @@ use tokio::sync::RwLock;
 use std::time::Duration;
 use async_openai::Client;
 use async_openai::config::OpenAIConfig;
-use std::path::{Path,PathBuf};
+use std::path::{PathBuf};
 
 /// This takes advantage of Axum's SubStates feature by deriving FromRef. This is the only way to have more than one
 /// item in Axum's State. Leptos requires you to have leptosOptions in your State struct for the leptos route handlers
@@ -42,7 +42,7 @@ impl AppState {
     if let Ok(api_base) = dotenvy::var("OPENAI_API_BASE") {
       openai_config = openai_config.with_api_base(api_base);
     }
-    let upload_store = dotenvy::var("MIKO_FILE_STORAGE").as_deref().unwrap_or_else(|_| "uploads").into();
+    let upload_store = dotenvy::var("MIKO_FILE_STORAGE").as_deref().unwrap_or("uploads").into();
     tokio::fs::create_dir_all(&upload_store).await?;
 
     Ok(Self {

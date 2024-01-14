@@ -1,7 +1,5 @@
-
 use cfg_if::cfg_if;
 use leptos::*;
-use crate::{models::User};
 
 cfg_if! {
   if #[cfg(feature="ssr")] {
@@ -12,7 +10,7 @@ use axum::{
     http::{Request, header::HeaderMap},
     body::Body as AxumBody,
 };
-use leptos::{logging::log};
+
 use leptos_axum::handle_server_fns_with_context;
 use axum_session_auth::SessionPgPool;
 use sqlx::PgPool;
@@ -23,6 +21,7 @@ use serde::Deserialize;
 use oauth2::reqwest::async_http_client;
 use oauth2::{AuthorizationCode, CsrfToken, PkceCodeChallenge, Scope, TokenResponse};
 use crate::pgdb::UserInfo;
+use crate::models::User;
 
 pub type AuthSession = axum_session_auth::AuthSession<User, Uuid, SessionPgPool, PgPool>;
 }}
@@ -30,25 +29,12 @@ pub type AuthSession = axum_session_auth::AuthSession<User, Uuid, SessionPgPool,
 cfg_if! {
   if #[cfg(feature = "ssr")] {
 
-    pub fn pool() -> Result<PgPool, ServerFnError> {
-        use_context::<PgPool>()
-            .ok_or_else(|| ServerFnError::ServerError("Pool missing.".into()))
-    }
 
-    pub fn auth() -> Result<AuthSession, ServerFnError> {
-        use_context::<AuthSession>()
-            .ok_or_else(|| ServerFnError::ServerError("Auth session missing.".into()))
-    }
-
-    pub fn app_state() -> Result<AppState, ServerFnError> {
-        use_context::<AppState>()
-            .ok_or_else(|| ServerFnError::ServerError("App state missing.".into()))
-    }
 
     pub async fn server_fn_handler(State(app_state): State<AppState>, auth_session: AuthSession, path: Path<String>, headers: HeaderMap, raw_query: RawQuery,
           request: Request<AxumBody>) -> impl IntoResponse {
 
-        log!("{:?}", path);
+        tracing::info!("{:?}", path);
 
         handle_server_fns_with_context(path, headers, raw_query, move || {
             provide_context(auth_session.clone());
@@ -88,7 +74,7 @@ cfg_if! {
         .set_pkce_challenge(pkce_code_challenge)
         .url();
 
-      log::info!("csrf state: {}", csrf_state.secret());
+      tracing::info!("csrf state: {}", csrf_state.secret());
       app_state.remember_verifier(&csrf_state, pkce_code_verifier).await;
       Ok(Redirect::to(authorize_url.as_ref()))
     }
@@ -125,7 +111,7 @@ cfg_if! {
         .await
         .unwrap();
 
-      log::info!("the user data: {user_data:?}");
+      tracing::info!("the user data: {user_data:?}");
 
       let user = UserInfo::save(&app_state.pool, user_data.clone()).await?;
       session.login_user(user.id);
@@ -135,42 +121,3 @@ cfg_if! {
     }
 
 }}
-
-#[server(GetUser, "/bff")]
-pub async fn get_user() -> Result<Option<User>, ServerFnError> {
-    let auth = auth()?;
-    Ok(auth.current_user)
-}
-
-#[server(OauthLogin, "/bff")]
-pub async fn oauth_login() -> Result<(), ServerFnError> {
-  let app_state = app_state()?;
-  // Google supports Proof Key for Code Exchange (PKCE - https://oauth.net/2/pkce/).
-  // Create a PKCE code verifier and SHA-256 encode it as a code challenge.
-  let (pkce_code_challenge, pkce_code_verifier) = oauth2::PkceCodeChallenge::new_random_sha256();
-
-  // Generate the authorization URL to which we'll redirect the user.
-  let (authorize_url, csrf_state) = app_state
-    .auth_client()
-    .authorize_url(oauth2::CsrfToken::new_random)
-    .add_scope(oauth2::Scope::new("openid".to_string()))
-    .add_scope(oauth2::Scope::new("email".to_string()))
-    .add_scope(oauth2::Scope::new("profile".to_string()))
-    .set_pkce_challenge(pkce_code_challenge)
-    .url();
-
-  log::info!("csrf state: {}", csrf_state.secret());
-  app_state.remember_verifier(&csrf_state, pkce_code_verifier).await;
-  leptos_axum::redirect(authorize_url.as_str());
-  Ok(())
-}
-
-#[server(Logout, "/bff")]
-pub async fn logout() -> Result<(), ServerFnError> {
-    let auth = auth()?;
-
-    auth.logout_user();
-    leptos_axum::redirect("/");
-
-    Ok(())
-}

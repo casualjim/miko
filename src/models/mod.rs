@@ -1,67 +1,42 @@
-use std::collections::HashSet;
+mod chat;
+mod files;
+mod user;
 
-use cfg_if::cfg_if;
-use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
+pub use chat::*;
+use derive_builder::UninitializedFieldError;
+pub use files::UploadedFile;
+pub use user::User;
 
+impl From<UninitializedFieldError> for ChatError {
+  fn from(value: UninitializedFieldError) -> Self {
+    ChatError::InvalidArgument(value.to_string())
+  }
+}
 #[derive(Debug, Clone, Default)]
 pub struct CurrentUser(pub Option<User>);
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct User {
-  pub id: Uuid,
-  pub email: String,
-  pub family_name: Option<String>,
-  pub given_name: Option<String>,
-  pub password: String,
-  pub name: String,
-  pub picture: Option<String>,
-  pub provider: String,
-  pub permissions: HashSet<String>,
-  pub created_at: DateTime<Utc>,
-  pub updated_at: DateTime<Utc>,
-}
+impl CurrentUser {
+  pub fn is_authenticated(&self) -> bool {
+    self.0.is_some()
+  }
 
-cfg_if! {
-  if #[cfg(feature = "ssr")] {
-    use axum_session_auth::Authentication;
-    use axum_session_auth::HasPermission;
-    use async_trait::async_trait;
+  pub fn picture(&self) -> Option<String> {
+    self.0.as_ref().and_then(|user| user.picture.clone())
+  }
 
-    use sqlx::PgPool;
-    use crate::pgdb::User as SqlUser;
-
-    impl User {
-      pub async fn get_by_email(email: &str, pool: &PgPool) -> anyhow::Result<User> {
-        let sql_user = SqlUser::get_by_email(email, pool).await?;
-        Ok(sql_user)
-      }
-    }
-
-    #[async_trait]
-    impl Authentication<User, Uuid, PgPool> for User {
-      async fn load_user(id: Uuid, pool: Option<&PgPool>) -> anyhow::Result<User> {
-        let user = SqlUser::get(id, pool.unwrap()).await?;
-        Ok(user)
-      }
-      fn is_authenticated(&self) -> bool {
-        true
-      }
-      fn is_active(&self) -> bool {
-        true
-      }
-      fn is_anonymous(&self) -> bool {
-        false
-      }
-    }
-
-    #[async_trait]
-    impl HasPermission<PgPool> for User {
-        async fn has(&self, perm: &str, _pool: &Option<&PgPool>) -> bool {
-            self.permissions.contains(perm)
-        }
+  pub fn name(&self) -> String {
+    if let Some(user) = self.0.as_ref() {
+      user.name.clone()
+    } else {
+      "Guest".to_string()
     }
   }
 
+  pub fn email(&self) -> String {
+    self
+      .0
+      .as_ref()
+      .map(|user| user.email.clone())
+      .unwrap_or_default()
+  }
 }

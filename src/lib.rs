@@ -1,4 +1,5 @@
 pub mod models;
+mod routes;
 
 use cfg_if::cfg_if;
 pub mod app;
@@ -30,7 +31,7 @@ cfg_if! { if #[cfg(feature = "ssr")]{
   use axum::response::IntoResponse;
   use axum::Json;
   use serde_json::json;
-
+  use async_openai::error::OpenAIError;
 
   pub type Result<T, E = Error> = core::result::Result<T, E>;
 
@@ -50,10 +51,12 @@ cfg_if! { if #[cfg(feature = "ssr")]{
     Pgx(#[from] sqlx::Error),
     #[error("serde: {0}")]
     Serde(#[from] serde_json::Error),
-    // #[error("openai: {0}")]
-    // OpenAI(#[from] OpenAIError),
+    #[error("openai: {0}")]
+    OpenAI(#[from] OpenAIError),
     #[error("invalid args: {0}")]
     InvalidArgument(String),
+    #[error("io: {0}")]
+    Io(#[from] std::io::Error),
     // #[error("uninitialized field: {0}")]
     // UninitializedField(#[from] UninitializedFieldError),
   }
@@ -72,8 +75,9 @@ cfg_if! { if #[cfg(feature = "ssr")]{
         Error::Pgx(sqlx::Error::RowNotFound) => StatusCode::NOT_FOUND,
         Error::Pgx(_e) => StatusCode::INTERNAL_SERVER_ERROR,
         Error::Serde(_e) => StatusCode::BAD_REQUEST,
-        // Error::OpenAI(_e) => StatusCode::INTERNAL_SERVER_ERROR,
+        Error::OpenAI(_e) => StatusCode::INTERNAL_SERVER_ERROR,
         Error::InvalidArgument(_e) => StatusCode::BAD_REQUEST,
+        Error::Io(_e) => StatusCode::INTERNAL_SERVER_ERROR,
         // Error::UninitializedField(_e) => StatusCode::BAD_REQUEST,
       }
     }

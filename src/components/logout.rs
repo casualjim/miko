@@ -4,10 +4,10 @@ use leptos::{
 };
 use leptos_router::*;
 
-use crate::app::handlers::Logout;
+use crate::routes::authn::Logout;
 
 #[component]
-pub fn Logout(show_modal: WriteSignal<bool>) -> impl IntoView {
+pub fn Logout(show_modal: RwSignal<bool>) -> impl IntoView {
   view! { <a on:click=move |_| show_modal.set(true)>"Log out"</a> }
 }
 
@@ -25,22 +25,22 @@ pub fn LogoutModal(
   let close_modal = move |_| set_show_modal.set(false);
 
   view! {
-      <dialog id="logoutModal" class="modal backdrop-blur" class:modal-open=show_modal>
-          <div class="modal-box" node_ref=modal_ref>
-              <form method="dialog">
-                  <button class="btn btn-sm btn-ghost absolute right-2 top-2" on:click=close_modal>
-                      "✕"
-                  </button>
-              </form>
-              <p>"Are you sure you want to log out?"</p>
-              <div class="modal-action">
-                  <ActionForm action=logout>
-                      <button type="submit" class="btn btn-primary" on:click=close_modal>
-                          "Log Out"
-                      </button>
-                  </ActionForm>
-              </div>
-          </div>
-      </dialog>
+    <dialog id="logoutModal" class="modal backdrop-blur" class:modal-open=show_modal>
+      <div class="modal-box" node_ref=modal_ref>
+        <form method="dialog">
+          <button class="btn btn-sm btn-ghost absolute right-2 top-2" on:click=close_modal>
+            "✕"
+          </button>
+        </form>
+        <p>"Are you sure you want to log out?"</p>
+        <div class="modal-action">
+          <ActionForm action=logout>
+            <button type="submit" class="btn btn-primary" on:click=close_modal>
+              "Log Out"
+            </button>
+          </ActionForm>
+        </div>
+      </div>
+    </dialog>
   }
 }

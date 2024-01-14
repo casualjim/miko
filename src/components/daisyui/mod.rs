@@ -3,9 +3,9 @@ use leptos::*;
 #[component]
 pub fn Card(children: Children) -> impl IntoView {
   view! {
-      <div class="card bg-base-200 shadow-md w-full">
-          <div class="card-body">{children()}</div>
-      </div>
+    <div class="card bg-base-200 shadow-md w-full">
+      <div class="card-body">{children()}</div>
+    </div>
   }
 }
 
@@ -17,12 +17,12 @@ pub fn Panel(children: Children) -> impl IntoView {
 #[component]
 pub fn Textarea(label: &'static str) -> impl IntoView {
   view! {
-      <div class="form-control w-full">
-          <label class="label">
-              <span class="label-text">{label}</span>
-          </label>
-          <input/>
-      </div>
+    <div class="form-control w-full">
+      <label class="label">
+        <span class="label-text">{label}</span>
+      </label>
+      <input/>
+    </div>
   }
 }
 
@@ -34,22 +34,22 @@ pub fn FormInput(
   error_message: Option<&'static str>,
 ) -> impl IntoView {
   view! {
-      <div class="form-control w-full max-w-xs">
-          <label class="label">
-              <span class="label-text">{label}</span>
-          </label>
-          <input name=name type=input_type class="input input-bordered"/>
-          {error_message
-              .map(|emsg| {
-                  Some(
-                      view! {
-                          <label class="label">
-                              <span class="label-text-alt text-error">{emsg}</span>
-                          </label>
-                      },
-                  )
-              })}
+    <div class="form-control w-full max-w-xs">
+      <label class="label">
+        <span class="label-text">{label}</span>
+      </label>
+      <input name=name type=input_type class="input input-bordered"/>
+      {error_message
+          .map(|emsg| {
+              Some(
+                  view! {
+                    <label class="label">
+                      <span class="label-text-alt text-error">{emsg}</span>
+                    </label>
+                  },
+              )
+          })}
 
-      </div>
+    </div>
   }
 }

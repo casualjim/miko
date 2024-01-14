@@ -12,7 +12,9 @@ use std::sync::Arc;
 use oauth2::{RedirectUrl, RevocationUrl,PkceCodeVerifier,CsrfToken,basic::BasicClient, AuthUrl, ClientId, TokenUrl};
 use tokio::sync::RwLock;
 use std::time::Duration;
-
+use async_openai::Client;
+use async_openai::config::OpenAIConfig;
+use std::path::{Path,PathBuf};
 
 /// This takes advantage of Axum's SubStates feature by deriving FromRef. This is the only way to have more than one
 /// item in Axum's State. Leptos requires you to have leptosOptions in your State struct for the leptos route handlers
@@ -24,18 +26,32 @@ pub struct AppState {
 
   pub auth_client: BasicClient,
   secrets: Arc<RwLock<ttl_cache::TtlCache<String, PkceCodeVerifier>>>,
-  // openai_client: Arc<rs_openai::OpenAI>,
+  openai_client: Arc<Client<OpenAIConfig>>,
+  pub upload_store: PathBuf,
 }
 
 impl AppState {
   pub async fn new<S: Into<String>>(database_url: S, client_id: S, leptos_options: LeptosOptions) -> crate::Result<Self> {
     let pool = PgPool::connect(&database_url.into()).await?;
     let routes = generate_route_list(App);
+
+    let mut openai_config = OpenAIConfig::new();
+    if let Ok(org_id) = dotenvy::var("OPENAI_ORG_ID") {
+      openai_config = openai_config.with_org_id(org_id);
+    }
+    if let Ok(api_base) = dotenvy::var("OPENAI_API_BASE") {
+      openai_config = openai_config.with_api_base(api_base);
+    }
+    let upload_store = dotenvy::var("MIKO_FILE_STORAGE").as_deref().unwrap_or_else(|_| "uploads").into();
+    tokio::fs::create_dir_all(&upload_store).await?;
+
     Ok(Self {
       leptos_options,
       pool,
       routes,
+      openai_client: Arc::new(Client::with_config(openai_config)),
       secrets: Arc::new(RwLock::new(ttl_cache::TtlCache::new(100_000))),
+      upload_store,
       auth_client: BasicClient::new(
         ClientId::new(client_id.into()),
         None,
@@ -63,9 +79,9 @@ impl AppState {
     self.auth_client.clone()
   }
 
-  // pub fn openai_client(&self) -> Arc<rs_openai::OpenAI> {
-  //   self.openai_client.clone()
-  // }
+  pub fn openai_client(&self) -> Arc<async_openai::Client<OpenAIConfig>> {
+    self.openai_client.clone()
+  }
 
   pub(crate) async fn remember_verifier(&self, token: &CsrfToken, verifier: PkceCodeVerifier) {
     self.secrets.write().await.insert(

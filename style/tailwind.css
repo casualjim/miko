@@ -2,11 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
+::-webkit-scrollbar {
+  @apply w-1 h-1 rounded;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-zinc-700 rounded;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-zinc-400 rounded;
+}
+
+::-webkit-scrollbar-corner {
+  @apply bg-transparent;
+}
+
+@supports (-webkit-touch-callout: none) {
+  .h-screen {
+    height: 100dvh;
+    /* Override height for Safari */
+  }
+
+  .min-h-screen {
+    min-height: 100dvh;
+    /* Override height for Safari */
+  }
+}
+
 /* In smaller screens, font-sizes smaller than 16px cause
    disruptive zooming. Setting to 16px for input text fields
    fixes this. Issue: https://github.com/polywrap/evo.ninja/issues/620 */
 @media screen and (max-width: 480px) {
-
   input,
   textarea {
     font-size: 16px !important;

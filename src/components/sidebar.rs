@@ -1,15 +1,10 @@
 use gloo_events::EventListener;
-use leptos::{
-  ev,
-  html::{Form, Input},
-  logging::log,
-  *,
-};
+use leptos::{html::Input, logging::log, *};
 use leptos_router::*;
 use phosphor_leptos::{GithubLogo, IconWeight, NotePencil, PencilSimple, TrashSimple};
 use uuid::Uuid;
 use wasm_bindgen::JsCast;
-use web_sys::{Event, HtmlFormElement, HtmlInputElement, Node, SubmitEvent};
+use web_sys::{Event, Node, SubmitEvent};
 
 use crate::{
   components::{account_dropdown::AccountDropdown, logo::Logo, workspace::Workspace},
@@ -113,24 +108,28 @@ fn ChatList(
       </div>
     }
   };
-  chat_resource.and_then(move |chats| {
-    let is_empty = chats.is_empty();
 
-    view! {
-      <Suspense fallback=move || {
-          view! { <div class="skeleton mx-2 h-[20vh] w-[calc(100%-1rem)]"></div> }
-      }>
-        <div class="h-full max-h-[30vh] space-y-0.5 overflow-y-auto [scrollbar-gutter:stable]">
-          <Show when=move || { !is_empty } fallback=empty_chats>
-            // <ul class="menu p-2 bg-base-500 w-full">{chat_view()}</ul>
-            <div class="px-2">
-              <ChatListItems edit_chat active_chat/>
-            </div>
-          </Show>
-        </div>
-      </Suspense>
-    }
-  })
+  let (is_empty, set_is_empty) = create_signal(true);
+  create_effect(move |_| {
+    chat_resource.and_then(move |chats| {
+      set_is_empty.set(chats.is_empty());
+    });
+  });
+
+  view! {
+    <div class="h-full max-h-[30vh] space-y-0.5 overflow-y-auto [scrollbar-gutter:stable]">
+      <Show when=move || { !is_empty() } fallback=empty_chats>
+        <Suspense fallback=move || {
+            view! { <div class="skeleton mx-2 h-[20vh] w-[calc(100%-1rem)]"></div> }
+        }>
+          // <ul class="menu p-2 bg-base-500 w-full">{chat_view()}</ul>
+          <div class="px-2">
+            <ChatListItems edit_chat active_chat/>
+          </div>
+        </Suspense>
+      </Show>
+    </div>
+  }
 }
 
 #[component]
@@ -138,8 +137,7 @@ fn ChatListItems(
   edit_chat: RwSignal<Option<EditChat>>,
   active_chat: RwSignal<Option<Uuid>>,
 ) -> impl IntoView {
-  let ChatResourceContext(chat_resource, _, delete_chat, update_title) =
-    expect_context::<ChatResourceContext>();
+  let ChatResourceContext(chat_resource, _, delete_chat, update_title) = expect_context();
 
   view! {
     {move || {
@@ -196,8 +194,6 @@ fn ChatListItem(
       };
 
       EventListener::new(&leptos_dom::document(), "mousedown", click_outside).forget();
-    } else {
-      log!("input_ref is None");
     }
   });
 

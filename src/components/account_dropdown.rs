@@ -26,12 +26,12 @@ fn UserDropdown(user: ReadSignal<CurrentUser>, show_logout: RwSignal<bool>) -> i
         role="button"
         class="inline-flex w-full -translate-x-2 transform cursor-pointer items-center space-x-2 rounded-lg p-2 transition-colors hover:bg-base-800"
       >
-        <div class="flex items-center  space-x-2">
+        <div class="flex items-center space-x-2">
           <Show
             when=move || { picture().is_some() }
-            fallback=move || view! { <div className="h-8 w-8 min-w-[2rem] rounded-full bg-cyan-600"></div> }
+            fallback=move || view! { <div class="h-8 w-8 min-w-[2rem] rounded-full bg-primary"></div> }
           >
-            <img src=picture() width="32" height="32" class="h-8 w-8 min-w-[2rem] rounded-full bg-cyan-600"/>
+            <img src=picture() width="32" height="32" class="h-8 w-8 min-w-[2rem] rounded-full bg-primary"/>
           </Show>
           <div class="w-full max-w-[124px] space-y-1 overflow-x-hidden">
             <div class="w-full overflow-hidden text-ellipsis whitespace-nowrap text-sm font-semibold leading-none">
@@ -43,7 +43,7 @@ fn UserDropdown(user: ReadSignal<CurrentUser>, show_logout: RwSignal<bool>) -> i
           </div>
         </div>
       </div>
-      <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
+      <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-52">
         <li>
           <GearSix size="16" weight=IconWeight::Bold/>
           <div class="leading-none">"Account Settings"</div>
@@ -69,7 +69,7 @@ fn GuestDropdown() -> impl IntoView {
         <Avatar size=32/>
         <div class="text-white">"Guest"</div>
       </div>
-      <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
+      <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-52">
         <li>
           <UserCirclePlus size="16" weight=IconWeight::Bold/>
           <a rel="external" href="/oauth/start">
@@ -85,7 +85,7 @@ fn GuestDropdown() -> impl IntoView {
 pub fn Avatar(size: usize, #[prop(optional)] class: &'static str) -> impl IntoView {
   view! {
     <img
-      src="images/guest.svg"
+      src="/images/guest.svg"
       class=move || format!("rounded-full {}", class)
       width=size
       height=size

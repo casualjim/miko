@@ -1,5 +1,6 @@
 mod about;
+mod chat;
 mod homepage;
 
 pub use about::AboutPage;
-pub use homepage::HomePage;
+pub use chat::ChatPage;

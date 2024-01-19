@@ -52,6 +52,7 @@ async fn main() -> anyhow::Result<()> {
     .leptos_routes_with_handler(state.routes.clone(), get(handlers::leptos_routes_handler))
     .route("/oauth/start", get(handlers::start_login))
     .route("/oauth/finish", get(handlers::get_access_token))
+    .nest("/api/localai", miko::server::localai::routes(state.clone()))
     .fallback(file_and_error_handler)
     .layer(
       AuthSessionLayer::<User, Uuid, SessionPgPool, PgPool>::new(Some(state.pool.clone()))

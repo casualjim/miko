@@ -37,9 +37,7 @@ impl From<Chat> for AppChat {
       email: value.user_email,
       created_at: value.created_at,
       updated_at: value.updated_at,
-      messages: vec![],
-      logs: vec![],
-      variables: Default::default(),
+      ..Default::default()
     }
   }
 }
@@ -243,5 +241,49 @@ impl Chat {
 
     let parts = futures::try_join!(chat, messages, variables, logs)?;
     Ok(parts.into())
+  }
+
+  pub async fn create(id: Uuid, user_id: Uuid, pool: &PgPool) -> Result<AppChat> {
+    let chat = sqlx::query_file_as!(Chat, "queries/chats/chat_create.sql", id, user_id)
+      .fetch_one(pool)
+      .await?;
+
+    Ok(chat.into())
+  }
+
+  pub async fn delete(id: Uuid, pool: &PgPool) -> Result<()> {
+    sqlx::query_file!("queries/chats/chat_delete.sql", id)
+      .execute(pool)
+      .await?;
+    Ok(())
+  }
+
+  pub async fn update_title(id: Uuid, title: String, pool: &PgPool) -> Result<AppChat> {
+    let chat = sqlx::query_file_as!(Chat, "queries/chats/title_update.sql", title, id)
+      .fetch_one(pool)
+      .await?;
+    Ok(chat.into())
+  }
+}
+
+impl Log {
+  pub async fn create(
+    chat_id: Uuid,
+    user_id: Uuid,
+    title: String,
+    content: Option<String>,
+    pool: &PgPool,
+  ) -> Result<AppChatLog> {
+    let log = sqlx::query_file_as!(
+      Log,
+      "queries/logs/add_new.sql",
+      chat_id,
+      user_id,
+      title,
+      content
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(log.into())
   }
 }

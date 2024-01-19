@@ -5,11 +5,14 @@ use cfg_if::cfg_if;
 use leptos::*;
 use leptos_meta::*;
 use leptos_router::*;
+use uuid::Uuid;
+
+pub const LEPTOS_OUTPUT_NAME: &str = env!("LEPTOS_OUTPUT_NAME");
 
 // pub use state::*;
 use crate::{
-  components::layout::*,
-  components::modals::*,
+  components::{layout::*, modals::*},
+  create_chat_resource, create_chat_state,
   error_template::{AppError, ErrorTemplate},
   models::CurrentUser,
   pages::*,
@@ -47,6 +50,9 @@ pub fn App() -> impl IntoView {
   let (current_user, set_current_user) = create_signal(CurrentUser::default());
   provide_context(current_user);
 
+  create_chat_state();
+  create_chat_resource();
+
   let show_logout_modal = create_rw_signal(false);
 
   let getcurrentuser = create_memo(move |_| {
@@ -79,6 +85,11 @@ pub fn App() -> impl IntoView {
       "pastel"
     }
   };
+  let on_toggle_theme = move |_| {
+    set_is_dark.update(|value| *value = !*value);
+  };
+
+  let (chat_id, set_chat_id) = create_signal(None);
 
   cfg_if! { if #[cfg(feature="hydrate")] {
     create_effect(move |_| {
@@ -87,9 +98,9 @@ pub fn App() -> impl IntoView {
   }}
 
   view! {
-    <Html lang="en" class="h-full font-sans font-light bg-base-900 text-white tracking-wide" attr:data-theme=dark_mode/>
+    <Html lang="en" class="h-full tracking-wide" attr:data-theme=dark_mode/>
 
-    <Stylesheet id="miko" href="/pkg/miko.css"/>
+    <Stylesheet id="leptos" href=format!("/pkg/{}.css", LEPTOS_OUTPUT_NAME)/>
 
     <Link rel="icon" href="/images/happy-egg.svg"/>
     <Link rel="mask-icon" href="/images/happy-egg.mono.svg"/>
@@ -98,32 +109,30 @@ pub fn App() -> impl IntoView {
     // sets the document title
     <Title text="Miko - the helpful robot"/>
 
-    <Body/>
+    <Body class="h-full"/>
 
-    <div class="h-full">
-      // content for this welcome page
-      <Router fallback=|| {
-          let mut outside_errors = Errors::default();
-          outside_errors.insert_with_default_key(AppError::NotFound);
-          view! { <ErrorTemplate outside_errors/> }.into_view()
-      }>
-        <LogoutModal logout=logout show_modal=show_logout_modal/>
-        <SidebarLayoutWithHeader show_logout=show_logout_modal>
-          <Transition fallback=|| {
-              view! { <div class="skeleton w-full h-full"></div> }
-          }>
-            <ErrorBoundary fallback=|errors| view! { <ErrorTemplate errors=errors/> }>
-              <MainContent/>
-            </ErrorBoundary>
-          </Transition>
-        </SidebarLayoutWithHeader>
-      </Router>
-    </div>
+    // content for this welcome page
+    <Router fallback=|| {
+        let mut outside_errors = Errors::default();
+        outside_errors.insert_with_default_key(AppError::NotFound);
+        view! { <ErrorTemplate outside_errors/> }.into_view()
+    }>
+      <LogoutModal logout=logout show_modal=show_logout_modal/>
+      <SidebarLayoutWithHeader chat_id show_logout=show_logout_modal is_dark on_toggle_theme>
+        <Transition fallback=|| {
+            view! { <div class="skeleton w-full h-full"></div> }
+        }>
+          <ErrorBoundary fallback=|errors| view! { <ErrorTemplate errors=errors/> }>
+            <MainContent set_chat_id/>
+          </ErrorBoundary>
+        </Transition>
+      </SidebarLayoutWithHeader>
+    </Router>
   }
 }
 
 #[component]
-fn MainContent() -> impl IntoView {
+fn MainContent(set_chat_id: WriteSignal<Option<Uuid>>) -> impl IntoView {
   let user = expect_context::<ReadSignal<CurrentUser>>();
   let is_authenticated = move || user().is_authenticated();
   view! {
@@ -145,10 +154,10 @@ fn MainContent() -> impl IntoView {
         }
       >
 
-        <Route path="/about" view=AboutPage/>
-        <Route path="/" view=HomePage/>
+        <Route path="about" view=AboutPage/>
+        <Route path="" view=move || view! { <ChatPage set_chat_id/> }/>
+        <Route path="chat/:id" view=move || view! { <ChatPage set_chat_id/> }/>
       </Route>
-
     </Routes>
   }
 }

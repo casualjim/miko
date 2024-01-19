@@ -1,5 +1,6 @@
 use ev::MouseEvent;
 use leptos::*;
+use uuid::Uuid;
 
 use crate::components::sidebar::Sidebar;
 
@@ -28,7 +29,13 @@ pub fn CenteredLayout(children: Children) -> impl IntoView {
 }
 
 #[component]
-pub fn SidebarLayoutWithHeader(show_logout: RwSignal<bool>, children: Children) -> impl IntoView {
+pub fn SidebarLayoutWithHeader(
+  show_logout: RwSignal<bool>,
+  is_dark: ReadSignal<bool>,
+  chat_id: ReadSignal<Option<Uuid>>,
+  #[prop(into)] on_toggle_theme: Callback<ev::Event>,
+  children: Children,
+) -> impl IntoView {
   let (sidebar_open, set_sidebar_open) = create_signal(true);
   let (close_button_hover, set_close_button_hover) = create_signal(false);
 
@@ -42,13 +49,13 @@ pub fn SidebarLayoutWithHeader(show_logout: RwSignal<bool>, children: Children) 
   };
 
   view! {
-      <div class="relative flex h-screen overflow-hidden">
+      <div class="relative flex h-screen overflow-hidden m-4">
           <aside
             class=clazz
             class:border-base-500=close_button_hover
           >
 
-              <Sidebar sidebar_open=sidebar_open is_hovering=close_button_hover show_logout=show_logout/>
+              <Sidebar chat_id sidebar_open is_hovering=close_button_hover show_logout is_dark on_toggle_theme/>
               <CloseSidebarButton
                   click=move |_| set_sidebar_open.update(|value| *value = !*value)
                   sidebar_is_open=sidebar_open

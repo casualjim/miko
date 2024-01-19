@@ -1,5 +1,7 @@
+mod contexts;
 pub mod models;
 mod routes;
+#[cfg(feature = "ssr")] pub mod server;
 
 use cfg_if::cfg_if;
 pub mod app;
@@ -7,6 +9,8 @@ mod components;
 pub mod error_template;
 pub mod fileserv;
 mod pages;
+
+pub(crate) use contexts::*;
 
 cfg_if! { if #[cfg(feature = "hydrate")] {
     use leptos::*;

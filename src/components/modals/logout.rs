@@ -12,7 +12,7 @@ pub type LogoutAction = Action<Logout, Result<(), ServerFnError>>;
 pub fn LogoutModal(show_modal: RwSignal<bool>, logout: LogoutAction) -> impl IntoView {
   let modal_ref = create_node_ref::<Div>();
 
-  let show_modal_memo = create_memo(move |_| show_modal.get());
+  // let show_modal_memo = create_memo(move |_| show_modal.get());
 
   create_effect(move |_| {
     EventListener::new(&leptos_dom::document(), "keyup", move |event| {
@@ -20,7 +20,7 @@ pub fn LogoutModal(show_modal: RwSignal<bool>, logout: LogoutAction) -> impl Int
         .clone()
         .dyn_into::<leptos::ev::KeyboardEvent>()
         .unwrap();
-      if show_modal_memo() && keyboard_event.key_code() == 27 {
+      if show_modal() && keyboard_event.key_code() == 27 {
         show_modal.set(false);
       }
     })

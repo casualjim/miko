@@ -47,7 +47,7 @@ axum_session = { version = "0.9.0", features = [
 ], optional = true }
 serde = { version = "1.0.194", features = ["derive"] }
 struct-convert = { version = "1.3.1", optional = true }
-uuid = { version = "1.6.1", features = ["wasm-bindgen", "serde"] }
+uuid = { version = "1.6.1", features = ["wasm-bindgen", "serde", "v4"] }
 serde_json = { version = "1.0.111" }
 async-trait = { version = "0.1.77", optional = true }
 anyhow = { version = "1.0.79", optional = true }

@@ -2,7 +2,7 @@ use cfg_if::cfg_if;
 use leptos::*;
 use uuid::Uuid;
 
-use crate::models::Chat;
+use crate::models::{Chat, ChatLog};
 
 cfg_if! {
   if #[cfg(feature = "ssr")] {
@@ -17,6 +17,7 @@ cfg_if! {
 
     use crate::Result;
     use crate::app::{auth,app_state,pool};
+    use log::info;
   }
 }
 #[server(GetChats, "/bff")]
@@ -30,6 +31,63 @@ pub async fn get_chats() -> Result<Vec<Chat>, ServerFnError> {
     }
     None => Err(ServerFnError::ServerError("Not authenticated.".into())),
   }
+}
+
+#[server(CreateChat, "/bff")]
+pub async fn create_chat(id: Uuid) -> Result<(), ServerFnError> {
+  let auth = auth()?;
+  match auth.current_user {
+    Some(user) => {
+      let db = pool()?;
+      let chat = Chat::create(id, user.id, &db).await?;
+      leptos_axum::redirect(&format!("/chat/{}", chat.id));
+      Ok(())
+    }
+    None => Err(ServerFnError::ServerError("Not authenticated.".into())),
+  }
+}
+
+#[server(AddChatLog, "/bff")]
+pub async fn add_chat_log(
+  chat_id: Uuid,
+  title: String,
+  content: Option<String>,
+) -> Result<ChatLog, ServerFnError> {
+  let auth = auth()?;
+  match auth.current_user {
+    Some(user) => {
+      let db = pool()?;
+      let chat = ChatLog::create(chat_id, user.id, title, content, &db).await?;
+      Ok(chat)
+    }
+    None => Err(ServerFnError::ServerError("Not authenticated.".into())),
+  }
+}
+
+#[server(DeleteChat, "/bff")]
+pub async fn delete_chat(id: Uuid) -> Result<(), ServerFnError> {
+  let auth = auth()?;
+  if !auth.is_authenticated() {
+    return Err(ServerFnError::ServerError("Not authenticated.".into()));
+  }
+
+  info!("Deleting chat with id: {}", id);
+  let db = pool()?;
+  Chat::delete(id, &db).await?;
+  leptos_axum::redirect("/");
+  Ok(())
+}
+
+#[server(UpdateChatTitle, "/bff")]
+pub async fn update_chat_title(id: Uuid, title: String) -> Result<(), ServerFnError> {
+  let auth = auth()?;
+  if !auth.is_authenticated() {
+    return Err(ServerFnError::ServerError("Not authenticated.".into()));
+  }
+
+  let db = pool()?;
+  Chat::update_title(id, title, &db).await?;
+  Ok(())
 }
 
 #[server(GenerateTitle, "/bff")]

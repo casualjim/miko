@@ -23,7 +23,46 @@ pub struct ApiError {
   pub code: Option<serde_json::Value>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ChatInfo {
+  pub id: Uuid,
+  pub name: Option<String>,
+}
+
+impl From<Chat> for ChatInfo {
+  fn from(chat: Chat) -> Self {
+    Self {
+      id: chat.id,
+      name: chat.title.or_else(|| Some("New Session".to_string())),
+    }
+  }
+}
+
+impl From<&Chat> for ChatInfo {
+  fn from(chat: &Chat) -> Self {
+    Self {
+      id: chat.id,
+      name: chat
+        .title
+        .clone()
+        .or_else(|| Some("New Session".to_string())),
+    }
+  }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct EditChat {
+  pub id: Uuid,
+  pub title: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct SubmittedGoal {
+  pub chat_id: Uuid,
+  pub goal: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Chat {
   pub id: Uuid,
   pub title: Option<String>,
@@ -224,7 +263,7 @@ pub struct FunctionCall {
   pub arguments: String,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 pub struct ChatLog {
   pub title: String,
   pub content: Option<String>,
@@ -253,7 +292,7 @@ pub enum Role {
 cfg_if! {
   if #[cfg(feature = "ssr")] {
     use sqlx::PgPool;
-    use crate::pgdb::Chat as SqlChat;
+    use crate::pgdb::{Chat as SqlChat, Log as SqlChatLog};
     use crate::Result;
     impl Chat {
       pub async fn find_for_user(id: Uuid, pool: &PgPool) -> Result<Vec<Chat>> {
@@ -264,7 +303,23 @@ cfg_if! {
         SqlChat::get(id, pool).await
       }
 
+      pub async fn create(id: Uuid, user_id: Uuid, pool: &PgPool) -> Result<Chat> {
+        SqlChat::create(id, user_id, pool).await
+      }
 
+      pub async fn delete(id: Uuid, pool: &PgPool) -> Result<()> {
+        SqlChat::delete(id, pool).await
+      }
+
+      pub async fn update_title(id: Uuid, title: String, pool: &PgPool) -> Result<Chat> {
+        SqlChat::update_title(id, title, pool).await
+      }
+    }
+
+    impl ChatLog {
+      pub async fn create(chat_id: Uuid, user_id: Uuid, title: String, content: Option<String>, pool: &PgPool) -> Result<ChatLog> {
+        SqlChatLog::create(chat_id, user_id, title, content, pool).await
+      }
     }
   }
 }

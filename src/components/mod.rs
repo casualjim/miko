@@ -1,4 +1,5 @@
 mod account_dropdown;
+pub mod chat;
 pub mod daisyui;
 pub mod footer;
 pub mod header;

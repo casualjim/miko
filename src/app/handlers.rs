@@ -29,12 +29,10 @@ pub type AuthSession = axum_session_auth::AuthSession<User, Uuid, SessionPgPool,
 cfg_if! {
   if #[cfg(feature = "ssr")] {
 
-
-
     pub async fn server_fn_handler(State(app_state): State<AppState>, auth_session: AuthSession, path: Path<String>, headers: HeaderMap, raw_query: RawQuery,
           request: Request<AxumBody>) -> impl IntoResponse {
 
-        tracing::info!("{:?}", path);
+        tracing::info!("{} {:?}", request.method(), path);
 
         handle_server_fns_with_context(path, headers, raw_query, move || {
             provide_context(auth_session.clone());

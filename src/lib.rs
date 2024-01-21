@@ -61,6 +61,8 @@ cfg_if! { if #[cfg(feature = "ssr")]{
     InvalidArgument(String),
     #[error("io: {0}")]
     Io(#[from] std::io::Error),
+    #[error("{0} not found")]
+    NotFound(String),
     // #[error("uninitialized field: {0}")]
     // UninitializedField(#[from] UninitializedFieldError),
   }
@@ -82,6 +84,7 @@ cfg_if! { if #[cfg(feature = "ssr")]{
         Error::OpenAI(_e) => StatusCode::INTERNAL_SERVER_ERROR,
         Error::InvalidArgument(_e) => StatusCode::BAD_REQUEST,
         Error::Io(_e) => StatusCode::INTERNAL_SERVER_ERROR,
+        Error::NotFound(_e) => StatusCode::NOT_FOUND,
         // Error::UninitializedField(_e) => StatusCode::BAD_REQUEST,
       }
     }

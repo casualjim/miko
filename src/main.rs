@@ -1,23 +1,37 @@
+use cfg_if::cfg_if;
+
+cfg_if! {
+  if #[cfg(feature = "ssr")] {
+    use axum::{routing::get, Router};
+    use axum_session::{SessionConfig, SessionLayer, SessionStore};
+    use axum_session_auth::{AuthConfig, AuthSessionLayer, SessionPgPool};
+    use leptos::*;
+    use leptos_axum::LeptosRoutes;
+    use miko::{
+      app::{state::AppState, *},
+      fileserv::file_and_error_handler,
+      models::User,
+    };
+    use sqlx::PgPool;
+    use tracing::Subscriber;
+    use tracing_subscriber::{
+      fmt::format::FmtSpan, layer::SubscriberExt, util::SubscriberInitExt, registry::LookupSpan, EnvFilter, Layer,
+    };
+    use uuid::Uuid;
+
+  }
+}
+
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-  use axum::{routing::get, Router};
-  use axum_session::{SessionConfig, SessionLayer, SessionStore};
-  use axum_session_auth::{AuthConfig, AuthSessionLayer, SessionPgPool};
-  use leptos::*;
-  use leptos_axum::LeptosRoutes;
-  use miko::{
-    app::{state::AppState, *},
-    fileserv::file_and_error_handler,
-    models::User,
-  };
-  use sqlx::PgPool;
-  use uuid::Uuid;
-
-  pretty_env_logger::init();
+  tracing_subscriber::registry()
+    .with(build_loglevel_filter_layer("info,miko=debug"))
+    .with(build_logger_text())
+    .init();
 
   let database_url = ::dotenvy::var("MIKO_DATABASE_URL").expect("MIKO_DATABASE_URL must be set");
-  log::info!("Connecting to database with {}.", &database_url);
+  tracing::info!("Connecting to database with {}.", &database_url);
   // let pool = PgPool::connect(&database_url).await?;
 
   let client_id =
@@ -45,14 +59,15 @@ async fn main() -> anyhow::Result<()> {
 
   // build our application with a route
   let app = Router::new()
+    .route("/oauth/start", get(handlers::start_login))
+    .route("/oauth/finish", get(handlers::get_access_token))
+    .nest("/openai/v1", miko::server::localai::routes(state.clone()))
+    .nest("/api/v1", miko::server::routes(state.clone()))
     .route(
       "/bff/*fn_name",
       get(handlers::server_fn_handler).post(handlers::server_fn_handler),
     )
     .leptos_routes_with_handler(state.routes.clone(), get(handlers::leptos_routes_handler))
-    .route("/oauth/start", get(handlers::start_login))
-    .route("/oauth/finish", get(handlers::get_access_token))
-    .nest("/api/localai", miko::server::localai::routes(state.clone()))
     .fallback(file_and_error_handler)
     .layer(
       AuthSessionLayer::<User, Uuid, SessionPgPool, PgPool>::new(Some(state.pool.clone()))
@@ -63,7 +78,7 @@ async fn main() -> anyhow::Result<()> {
 
   // run our app with hyper
   // `axum::Server` is a re-export of `hyper::Server`
-  log::info!("listening on http://{}", &addr);
+  tracing::info!("listening on http://{}", &addr);
   axum::Server::bind(&addr)
     .serve(app.into_make_service())
     .await
@@ -76,4 +91,41 @@ pub fn main() {
   // no client-side main function
   // unless we want this to work with e.g., Trunk for a purely client-side app
   // see lib.rs for hydration function instead
+}
+
+#[cfg(feature = "ssr")]
+fn build_logger_text<S>() -> Box<dyn Layer<S> + Send + Sync + 'static>
+where
+  S: Subscriber + for<'a> LookupSpan<'a>,
+{
+  if cfg!(debug_assertions) {
+    Box::new(
+      tracing_subscriber::fmt::layer()
+        .pretty()
+        .with_line_number(true)
+        .with_thread_names(true)
+        .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
+        .with_timer(tracing_subscriber::fmt::time::time()),
+    )
+  } else {
+    Box::new(
+      tracing_subscriber::fmt::layer()
+        .json()
+        .flatten_event(true)
+        .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
+        .with_timer(tracing_subscriber::fmt::time::time()),
+    )
+  }
+}
+
+#[cfg(feature = "ssr")]
+fn build_loglevel_filter_layer<S: Into<String>>(default_log: S) -> EnvFilter {
+  // filter what is output on log (fmt)
+  std::env::set_var(
+    "RUST_LOG",
+    std::env::var("KATNIP_LOG_LEVEL")
+      .or_else(|_| std::env::var("RUST_LOG"))
+      .unwrap_or_else(|_| default_log.into()),
+  );
+  EnvFilter::from_default_env()
 }

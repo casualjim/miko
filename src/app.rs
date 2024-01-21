@@ -17,6 +17,7 @@ use crate::{
   models::CurrentUser,
   pages::*,
   routes::authn::*,
+  SelectedFileSetter,
 };
 
 cfg_if! {
@@ -54,6 +55,9 @@ pub fn App() -> impl IntoView {
   create_chat_resource();
 
   let show_logout_modal = create_rw_signal(false);
+  let show_file_modal = create_rw_signal(false);
+  let (selected_file, set_selected_file) = create_signal(None);
+  provide_context(SelectedFileSetter(set_selected_file));
 
   let getcurrentuser = create_memo(move |_| {
     user
@@ -118,6 +122,7 @@ pub fn App() -> impl IntoView {
         view! { <ErrorTemplate outside_errors/> }.into_view()
     }>
       <LogoutModal logout=logout show_modal=show_logout_modal/>
+      <FileModal show_modal=show_file_modal content=selected_file/>
       <SidebarLayoutWithHeader chat_id show_logout=show_logout_modal is_dark on_toggle_theme>
         <Transition fallback=|| {
             view! { <div class="skeleton w-full h-full"></div> }

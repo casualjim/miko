@@ -17,7 +17,7 @@ cfg_if! {
 
     use crate::Result;
     use crate::app::{auth,app_state,pool};
-    use log::info;
+    use tracing::info;
   }
 }
 #[server(GetChats, "/bff")]

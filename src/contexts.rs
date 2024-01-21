@@ -1,5 +1,6 @@
 use leptos::*;
 use uuid::Uuid;
+use web_sys::File;
 
 use crate::{
   models::{Chat, EditChat},
@@ -10,6 +11,12 @@ pub type ChatResource = Resource<(usize, usize, usize), Result<Vec<Chat>, Server
 pub type ChatCreateAction = Action<CreateChat, Result<(), ServerFnError>>;
 pub type ChatDeleteAction = Action<DeleteChat, Result<(), ServerFnError>>;
 pub type ChatUpdateTitleAction = Action<UpdateChatTitle, Result<(), ServerFnError>>;
+
+#[derive(Clone, Copy)]
+pub struct ShowFileModal(pub RwSignal<bool>);
+
+#[derive(Clone, Copy)]
+pub struct SelectedFileSetter(pub WriteSignal<Option<File>>);
 
 #[derive(Clone)]
 pub struct ChatState {

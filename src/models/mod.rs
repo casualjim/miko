@@ -33,10 +33,7 @@ impl CurrentUser {
   }
 
   pub fn email(&self) -> String {
-    self
-      .0
-      .as_ref()
-      .map(|user| user.email.clone())
-      .unwrap_or_default()
+    #[allow(clippy::useless_asref)]
+    self.0.as_ref().map(|v| v.email.clone()).unwrap_or_default()
   }
 }

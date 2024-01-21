@@ -2,7 +2,6 @@ mod file;
 mod logout;
 
 pub use file::FileModal;
-use gloo_events::EventListener;
 use leptos::{html::Div, *};
 pub use logout::LogoutModal;
 use wasm_bindgen::{closure::Closure, JsCast as _};
@@ -32,6 +31,7 @@ pub fn Modal(id: &'static str, show_modal: RwSignal<bool>, children: Children) -
     }) as Box<dyn FnMut(_)>);
     let keyup = keyup_listener.as_ref().clone().into();
     keyup_listener.forget();
+
     let mouseup_listener = Closure::wrap(Box::new(move |event: ev::Event| {
       let mouse_event = event.clone().dyn_into::<leptos::ev::MouseEvent>().unwrap();
       if let Some(modal_ref) = modal_ref.get_untracked() {
@@ -66,7 +66,7 @@ pub fn Modal(id: &'static str, show_modal: RwSignal<bool>, children: Children) -
   let close_modal = move |_| show_modal.set(false);
 
   view! {
-    <dialog id=id class="modal backdrop-blur" class:modal-open=show_modal>
+    <dialog id=id class="modal backdrop-blur w-screen" class:modal-open=show_modal>
       <div class="modal-box" node_ref=modal_ref>
         <form method="dialog">
           <button class="btn btn-sm btn-ghost absolute right-2 top-2" on:click=close_modal>

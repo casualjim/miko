@@ -82,8 +82,8 @@ pub fn Sidebar(
 
                   <ChatList edit_chat active_chat />
                 </div>
+                <Workspace chats chat_id />
             </Show>
-            <Workspace chats />
           </div>
           <SidebarBottom show_logout is_dark on_toggle_theme />
         </div>

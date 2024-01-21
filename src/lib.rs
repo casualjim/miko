@@ -1,3 +1,4 @@
+mod api;
 mod contexts;
 pub mod models;
 mod routes;

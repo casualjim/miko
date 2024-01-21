@@ -17,7 +17,7 @@ use crate::{
   models::CurrentUser,
   pages::*,
   routes::authn::*,
-  SelectedFileSetter,
+  ShowFileModal,
 };
 
 cfg_if! {
@@ -57,7 +57,7 @@ pub fn App() -> impl IntoView {
   let show_logout_modal = create_rw_signal(false);
   let show_file_modal = create_rw_signal(false);
   let (selected_file, set_selected_file) = create_signal(None);
-  provide_context(SelectedFileSetter(set_selected_file));
+  provide_context(ShowFileModal(show_file_modal, set_selected_file));
 
   let getcurrentuser = create_memo(move |_| {
     user

@@ -1,4 +1,4 @@
-use leptos::{logging::log, *};
+use leptos::*;
 use markdown::Options;
 #[component]
 pub fn Markdown(

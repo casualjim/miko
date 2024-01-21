@@ -71,9 +71,10 @@ anyhow = { version = "1", optional = true }
 chrono = { version = "0.4", features = ["serde"] }
 oauth2 = { version = "4", optional = true }
 ttl_cache = { version = "0.5.1", optional = true }
-reqwest = { version = "0.11.23", optional = true, default-features = false, features = [
+reqwest = { version = "0.11", default-features = false, features = [
   "rustls-tls",
   "json",
+  "stream",
 ] }
 web-sys = { version = "0.3.67", features = [
   "AbortController",
@@ -99,7 +100,6 @@ tracing-subscriber = { version = "0.3", features = [
 ], optional = true }
 markdown = "1.0.0-alpha.16"
 mime_guess = "2"
-leptos-use = { version = "0.9.0", features = ["serde", "ssr"] }
 
 [features]
 hydrate = [
@@ -131,7 +131,6 @@ ssr = [
   "dep:struct-convert",
   "dep:oauth2",
   "dep:ttl_cache",
-  "dep:reqwest",
   "dep:async-openai",
 ]
 

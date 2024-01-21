@@ -8,9 +8,25 @@ use crate::{api, ChatResource, ShowFileModal};
 #[component]
 pub fn Workspace(chat_id: ReadSignal<Option<Uuid>>, chats: ChatResource) -> impl IntoView {
   let ShowFileModal(show_file_modal, set_selected_file) = expect_context();
+  let (files, set_files) = create_signal::<Vec<File>>(vec![]);
+
+  let upload_action = create_action(move |(chat_id, files): &(Uuid, Vec<File>)| {
+    let chat_id = *chat_id;
+    let files = files.to_vec();
+    async move {
+      api::upload_file::<()>(chat_id, files).await;
+    }
+  });
+
+  create_effect(move |_| {
+    let chat_id = chat_id();
+    let files = files();
+    if let Some(chat_id) = chat_id.as_ref() {
+      upload_action.dispatch((*chat_id, files));
+    }
+  });
 
   let drop_zone_ref = create_node_ref::<Div>();
-  let (files, set_files) = create_signal::<Vec<File>>(vec![]);
 
   let prevent_defaults = move |ev: DragEvent| {
     ev.prevent_default();
@@ -143,19 +159,6 @@ fn FileDialogOpener(
   set_files: WriteSignal<Vec<File>>,
   #[prop(into, default = MaybeSignal::Static(IconWeight::Regular))] weight: MaybeSignal<IconWeight>,
 ) -> impl IntoView {
-  let upload_action = create_action(move |form_data: &FormData| {
-    let chat_id = chat_id();
-    #[cfg(feature = "hydrate")]
-    let form_data = form_data.clone();
-    async move {
-      #[allow(unused_variables)]
-      if let Some(chat_id) = chat_id {
-        #[cfg(feature = "hydrate")]
-        api::upload_file::<()>(chat_id, form_data.clone()).await;
-      }
-    }
-  });
-
   let on_change = Callback::new(move |ev: Event| {
     let target = event_target::<HtmlInputElement>(&ev);
     let files = target
@@ -166,10 +169,6 @@ fn FileDialogOpener(
     if files.is_empty() {
       return;
     }
-    let form: HtmlFormElement = target.form().unwrap();
-
-    let form_data = FormData::new_with_form(&form).unwrap();
-    upload_action.dispatch(form_data);
     set_files.update(|v| v.extend(files.into_iter().map(File::from)));
   });
 

@@ -1,5 +1,4 @@
-use futures::io::Write;
-use leptos::{logging::log, *};
+use leptos::*;
 use wasm_bindgen::{closure::Closure, JsCast};
 use web_sys::{File, FileReader};
 

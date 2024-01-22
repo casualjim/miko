@@ -3,10 +3,10 @@ use std::{convert::Infallible, path::PathBuf, str::FromStr, time::Duration};
 use axum::{
   body::Body,
   extract::{Path, State},
-  http::{Request, Response, StatusCode, Uri},
+  http::Request,
   response::{
     sse::{Event, Sse},
-    IntoResponse, Response as AxumResponse,
+    IntoResponse,
   },
   routing::get,
   Json,

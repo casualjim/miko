@@ -1,7 +1,6 @@
 use cfg_if::cfg_if;
 use leptos::*;
 use server_fn::codec::{MultipartData, MultipartFormData};
-use tracing::info;
 use uuid::Uuid;
 
 use crate::models::UploadedFile;
@@ -55,7 +54,6 @@ pub async fn upload_files(data: MultipartData) -> Result<usize, ServerFnError> {
   match auth.current_user {
     Some(_user) => {
       let mut data = data.into_inner().unwrap();
-      info!("receiving data upload");
       let mut workspace_dir = PathBuf::new();
       let mut count = 0;
       let mut collected_fields = vec![];
@@ -68,11 +66,9 @@ pub async fn upload_files(data: MultipartData) -> Result<usize, ServerFnError> {
           if !tokio::fs::try_exists(&workspace_dir).await? {
             tokio::fs::create_dir_all(&workspace_dir).await?;
           }
-          info!("found chat id");
           break;
         }
 
-        info!("deferring file");
         collected_fields.push(field);
       }
 

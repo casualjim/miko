@@ -1,6 +1,5 @@
 use leptos::*;
 use uuid::Uuid;
-use web_sys::File;
 
 use crate::{
   models::{Chat, EditChat, UploadedFile},

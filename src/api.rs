@@ -91,7 +91,7 @@ cfg_if! {
       Some(T::de(Default::default()).unwrap())
     }
 
-    pub async fn get_text_file(chat_id: String, file_name: String) -> Option<String> {
+    pub async fn get_text_file(_chat_id: String, _file_name: String) -> Option<String> {
       None
     }
   }

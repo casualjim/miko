@@ -11,6 +11,23 @@ pub fn Workspace(chat_id: ReadSignal<Option<Uuid>>, chats: ChatResource) -> impl
   let ShowFileModal(show_file_modal, set_selected_file) = expect_context();
   let (files_to_upload, set_files_to_upload) = create_signal::<Vec<File>>(vec![]);
   let (files, set_files) = create_signal::<Vec<UploadedFile>>(vec![]);
+  let (active_chat, set_active_chat) = create_signal(None);
+
+  create_effect(move |_| {
+    if let Some(chat_id) = chat_id() {
+      if let Some(active_id) = active_chat() {
+        if active_id != chat_id {
+          set_files.update(|v| v.clear());
+          set_active_chat.update(|v| *v = Some(chat_id));
+        }
+      } else {
+        set_active_chat.update(|v| *v = Some(chat_id));
+      }
+    } else {
+      set_files.update(|v| v.clear());
+      set_active_chat.update(|v| *v = None);
+    }
+  });
 
   create_effect(move |_| {
     if let Some(chat_id) = chat_id() {
@@ -45,7 +62,11 @@ pub fn Workspace(chat_id: ReadSignal<Option<Uuid>>, chats: ChatResource) -> impl
     let chat_id = *chat_id;
     let files = files.to_vec();
     async move {
+      if files.is_empty() {
+        return;
+      }
       api::upload_file::<()>(chat_id, files).await;
+      set_files_to_upload.update(|v| v.clear());
     }
   });
 
@@ -85,41 +106,44 @@ pub fn Workspace(chat_id: ReadSignal<Option<Uuid>>, chats: ChatResource) -> impl
   };
 
   view! {
-    <div class="p-2">
-      <div class="flex w-full items-center justify-between space-x-1 px-2 text-neutral-content p-1">
-        <div class="text-xs uppercase tracking-widest text-[currentColor]">"Current workspace"</div>
-        <div class="flex items-center space-x-1">
-          <FileDialogOpener
-            id="titlefiles"
-            size="18"
-            class="hover:cursor-pointer hover:text-primary"
-            set_files=set_files_to_upload
-            weight=IconWeight::Bold
-            chat_id
-          />
+    <Show when=move || chat_id().is_some()>
+
+      <div class="p-2">
+        <div class="flex w-full items-center justify-between space-x-1 px-2 text-neutral-content p-1">
+          <div class="text-xs uppercase tracking-widest text-[currentColor]">"Current workspace"</div>
+          <div class="flex items-center space-x-1">
+            <FileDialogOpener
+              id="titlefiles"
+              size="18"
+              class="hover:cursor-pointer hover:text-primary"
+              set_files=set_files_to_upload
+              weight=IconWeight::Bold
+              chat_id
+            />
+          </div>
         </div>
-      </div>
 
-      <div
-        class="relative h-full max-h-[24vh] overflow-y-auto [scrollbar-gutter:stable]"
-        on:dragenter=prevent_defaults
-        on:dragover=prevent_defaults
-        on:dragleave=prevent_defaults
-        on:drop=on_drop
-      >
-        <Suspense fallback=move || {
-            view! { <div class="skeleton h-24 w-full"></div> }
-        }>
-          <Show
-            when=move || { !files().is_empty() }
-            fallback=move || view! { <EmptyWorkspace node_ref=drop_zone_ref set_files=set_files_to_upload chat_id/> }
-          >
-            <WorkspaceFiles node_ref=drop_zone_ref files=files select_file/>
-          </Show>
-        </Suspense>
-      </div>
+        <div
+          class="relative h-full max-h-[24vh] overflow-y-auto [scrollbar-gutter:stable]"
+          on:dragenter=prevent_defaults
+          on:dragover=prevent_defaults
+          on:dragleave=prevent_defaults
+          on:drop=on_drop
+        >
+          <Suspense fallback=move || {
+              view! { <div class="skeleton h-24 w-full"></div> }
+          }>
+            <Show
+              when=move || { !files().is_empty() }
+              fallback=move || view! { <EmptyWorkspace node_ref=drop_zone_ref set_files=set_files_to_upload chat_id/> }
+            >
+              <WorkspaceFiles node_ref=drop_zone_ref files=files select_file/>
+            </Show>
+          </Suspense>
+        </div>
 
-    </div>
+      </div>
+    </Show>
   }
 }
 

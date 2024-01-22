@@ -1,14 +1,45 @@
+use gloo_net::eventsource::futures::EventSource;
 use leptos::{html::Div, logging::log, *};
 use phosphor_leptos::{File as PhosphorFile, *};
 use uuid::Uuid;
-use web_sys::{js_sys, DragEvent, Event, File, FormData, HtmlFormElement, HtmlInputElement};
+use web_sys::{js_sys, DragEvent, Event, File, HtmlInputElement};
 
-use crate::{api, ChatResource, ShowFileModal};
+use crate::{api, models::UploadedFile, routes::files::get_files, ChatResource, ShowFileModal};
 
 #[component]
 pub fn Workspace(chat_id: ReadSignal<Option<Uuid>>, chats: ChatResource) -> impl IntoView {
   let ShowFileModal(show_file_modal, set_selected_file) = expect_context();
-  let (files, set_files) = create_signal::<Vec<File>>(vec![]);
+  let (files_to_upload, set_files_to_upload) = create_signal::<Vec<File>>(vec![]);
+  let (files, set_files) = create_signal::<Vec<UploadedFile>>(vec![]);
+
+  create_effect(move |_| {
+    if let Some(chat_id) = chat_id() {
+      let api_url = format!("/api/v1/workspace/{}/watch", chat_id);
+      let mut source = EventSource::new(&api_url).unwrap();
+      let mut sub = source.subscribe("message").unwrap();
+
+      on_cleanup(move || source.close());
+
+      use futures::StreamExt;
+      spawn_local(async move {
+        let files = get_files(chat_id).await.unwrap_or_default();
+        set_files.update(|v| *v = files);
+
+        while let Some(event) = sub.next().await {
+          if let Ok((_, event)) = event {
+            if let Some(data) = event.data().as_string() {
+              let file: UploadedFile = serde_json::from_str(&data).unwrap();
+              set_files.update(|v| {
+                if !v.iter().any(|f| f.file_name == file.file_name) {
+                  v.push(file)
+                }
+              });
+            }
+          }
+        }
+      });
+    }
+  });
 
   let upload_action = create_action(move |(chat_id, files): &(Uuid, Vec<File>)| {
     let chat_id = *chat_id;
@@ -20,9 +51,9 @@ pub fn Workspace(chat_id: ReadSignal<Option<Uuid>>, chats: ChatResource) -> impl
 
   create_effect(move |_| {
     let chat_id = chat_id();
-    let files = files();
-    if let Some(chat_id) = chat_id.as_ref() {
-      upload_action.dispatch((*chat_id, files));
+    let files = files_to_upload();
+    if let Some(chat_id) = chat_id {
+      upload_action.dispatch((chat_id, files));
     }
   });
 
@@ -44,11 +75,11 @@ pub fn Workspace(chat_id: ReadSignal<Option<Uuid>>, chats: ChatResource) -> impl
         .unwrap_or_default()
         .into_iter()
         .map(File::from);
-      set_files.update(|v| v.extend(files));
+      set_files_to_upload.update(|v| v.extend(files));
     }
   };
 
-  let select_file = move |file: File| {
+  let select_file = move |file: UploadedFile| {
     set_selected_file(Some(file));
     show_file_modal.set(true);
   };
@@ -62,7 +93,7 @@ pub fn Workspace(chat_id: ReadSignal<Option<Uuid>>, chats: ChatResource) -> impl
             id="titlefiles"
             size="18"
             class="hover:cursor-pointer hover:text-primary"
-            set_files
+            set_files=set_files_to_upload
             weight=IconWeight::Bold
             chat_id
           />
@@ -81,9 +112,9 @@ pub fn Workspace(chat_id: ReadSignal<Option<Uuid>>, chats: ChatResource) -> impl
         }>
           <Show
             when=move || { !files().is_empty() }
-            fallback=move || view! { <EmptyWorkspace node_ref=drop_zone_ref set_files chat_id/> }
+            fallback=move || view! { <EmptyWorkspace node_ref=drop_zone_ref set_files=set_files_to_upload chat_id/> }
           >
-            <WorkspaceFiles node_ref=drop_zone_ref files select_file/>
+            <WorkspaceFiles node_ref=drop_zone_ref files=files select_file/>
           </Show>
         </Suspense>
       </div>
@@ -122,15 +153,15 @@ fn EmptyWorkspace(
 #[allow(unused_variables)]
 fn WorkspaceFiles(
   node_ref: NodeRef<Div>,
-  files: ReadSignal<Vec<File>>,
-  #[prop(into)] select_file: Callback<File>,
+  files: ReadSignal<Vec<UploadedFile>>,
+  #[prop(into)] select_file: Callback<UploadedFile>,
 ) -> impl IntoView {
   view! {
     <div
       node_ref=node_ref
       class="h-full space-y-1 rounded-lg border-2 border-solid border-neutral p-[6px] transition-all duration-100 ease-in-out"
     >
-      <For each=files key=|f| f.name() let:file>
+      <For each=files key=|f| f.file_name.clone() let:file>
         <div
           class="flex w-full cursor-pointer items-center space-x-2 rounded p-1 text-sm text-neutral-content transition-colors duration-300"
           on:click={
@@ -142,8 +173,8 @@ fn WorkspaceFiles(
               }
           }
         >
-          <FileIcon file_type=file.type_()/>
-          <div class="w-full overflox-x-hidden text-ellipsis whitespace-nowrap">{file.name()}</div>
+          <FileIcon file_type=file.mime_type/>
+          <div class="w-full overflox-x-hidden text-ellipsis whitespace-nowrap">{file.file_name}</div>
         </div>
       </For>
     </div>

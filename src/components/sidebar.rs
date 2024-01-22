@@ -1,4 +1,4 @@
-use gloo_events::EventListener;
+#[cfg(feature = "hydrate")] use gloo_events::EventListener;
 use leptos::{html::Input, logging::log, *};
 use leptos_router::*;
 use phosphor_leptos::{GithubLogo, IconWeight, NotePencil, PencilSimple, TrashSimple};
@@ -30,7 +30,7 @@ pub fn Sidebar(
   let edit_chat = chat_state.edit_chat;
   let active_chat = chat_state.active_chat;
 
-  let ChatResourceContext(chats, create_chat, _, _) = expect_context::<ChatResourceContext>();
+  let ChatResourceContext(chats, create_chat, _, _) = expect_context();
 
   let chats_loading = chats.loading();
 
@@ -181,6 +181,7 @@ fn ChatListItem(
   create_effect(move |_| {
     if input_ref().is_some() {
       let input = input_ref().unwrap();
+      #[allow(unused_variables)]
       let click_outside = move |ev: &Event| {
         log!("click_outside: {:?}", ev);
         let mouse_event = ev.clone().dyn_into::<ev::MouseEvent>().unwrap();
@@ -193,6 +194,7 @@ fn ChatListItem(
         }
       };
 
+      #[cfg(feature = "hydrate")]
       EventListener::new(&leptos_dom::document(), "mousedown", click_outside).forget();
     }
   });

@@ -20,7 +20,7 @@ cfg_if! {
     use tracing::info;
   }
 }
-#[server(GetChats, "/bff")]
+#[server(GetChats, "/api")]
 pub async fn get_chats() -> Result<Vec<Chat>, ServerFnError> {
   let auth = auth()?;
   match auth.current_user {
@@ -33,7 +33,7 @@ pub async fn get_chats() -> Result<Vec<Chat>, ServerFnError> {
   }
 }
 
-#[server(CreateChat, "/bff")]
+#[server(CreateChat, "/api")]
 pub async fn create_chat(id: Uuid) -> Result<(), ServerFnError> {
   let auth = auth()?;
   match auth.current_user {
@@ -47,7 +47,7 @@ pub async fn create_chat(id: Uuid) -> Result<(), ServerFnError> {
   }
 }
 
-#[server(AddChatLog, "/bff")]
+#[server(AddChatLog, "/api")]
 pub async fn add_chat_log(
   chat_id: Uuid,
   title: String,
@@ -64,7 +64,7 @@ pub async fn add_chat_log(
   }
 }
 
-#[server(DeleteChat, "/bff")]
+#[server(DeleteChat, "/api")]
 pub async fn delete_chat(id: Uuid) -> Result<(), ServerFnError> {
   let auth = auth()?;
   if !auth.is_authenticated() {
@@ -78,7 +78,7 @@ pub async fn delete_chat(id: Uuid) -> Result<(), ServerFnError> {
   Ok(())
 }
 
-#[server(UpdateChatTitle, "/bff")]
+#[server(UpdateChatTitle, "/api")]
 pub async fn update_chat_title(id: Uuid, title: String) -> Result<(), ServerFnError> {
   let auth = auth()?;
   if !auth.is_authenticated() {
@@ -90,7 +90,7 @@ pub async fn update_chat_title(id: Uuid, title: String) -> Result<(), ServerFnEr
   Ok(())
 }
 
-#[server(GenerateTitle, "/bff")]
+#[server(GenerateTitle, "/api")]
 pub async fn generate_title(_id: Uuid, prompt: String) -> Result<String, ServerFnError> {
   let auth = auth()?;
   if auth.current_user.is_none() {
@@ -114,7 +114,7 @@ pub async fn generate_title(_id: Uuid, prompt: String) -> Result<String, ServerF
       ..Default::default()
     })
     .await
-    .map_err(|e| ServerFnError::ServerError(format!("OpenAI error: {}", e)))?;
+    .map_err(ServerFnError::WrappedServerError)?;
 
   if response.choices.is_empty() {
     return Err(ServerFnError::ServerError(

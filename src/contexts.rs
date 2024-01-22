@@ -3,7 +3,7 @@ use uuid::Uuid;
 use web_sys::File;
 
 use crate::{
-  models::{Chat, EditChat},
+  models::{Chat, EditChat, UploadedFile},
   routes::chats::{get_chats, CreateChat, DeleteChat, UpdateChatTitle},
 };
 
@@ -13,7 +13,7 @@ pub type ChatDeleteAction = Action<DeleteChat, Result<(), ServerFnError>>;
 pub type ChatUpdateTitleAction = Action<UpdateChatTitle, Result<(), ServerFnError>>;
 
 #[derive(Clone, Copy)]
-pub struct ShowFileModal(pub RwSignal<bool>, pub WriteSignal<Option<File>>);
+pub struct ShowFileModal(pub RwSignal<bool>, pub WriteSignal<Option<UploadedFile>>);
 
 #[derive(Clone)]
 pub struct ChatState {

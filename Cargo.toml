@@ -7,46 +7,57 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-axum = { version = "0.6", features = ["macros", "multipart"], optional = true }
+axum = { version = "0.7", optional = true, features = [
+  "macros",
+  "multipart",
+] } # axum = { version = "0.6", features = ["macros", "multipart"], optional = true }
 console_error_panic_hook = "0.1"
 console_log = "1"
 cfg-if = "1"
 futures = "0.3"
-gloo-net = { version = "0.5", optional = true }
-gloo-storage = { version = "0.3", optional = true }
-# gloo-events = { version = "0.2", optional = true }
+gloo-net = { version = "0.5" }
+gloo-storage = { version = "0.3" }
 gloo-events = { version = "0.2" }
-leptos = { version = "0.5", features = ["nightly", "rustls"] }
-leptos_axum = { version = "0.5", optional = true }
-leptos_meta = { version = "0.5", features = ["nightly"] }
-leptos_router = { version = "0.5", features = ["nightly"] }
-# leptos = { git = "https://github.com/leptos-rs/leptos", branch = "leptos_v0.6", features = [
-#   "nightly",
-#   "rustls",
-# ] }
-# leptos_axum = { git = "https://github.com/leptos-rs/leptos", branch = "leptos_v0.6", optional = true }
-# leptos_meta = { git = "https://github.com/leptos-rs/leptos", branch = "leptos_v0.6", features = [
-#   "nightly",
-# ] }
-# leptos_router = { git = "https://github.com/leptos-rs/leptos", branch = "leptos_v0.6", features = [
-#   "nightly",
-# ] }
-# server_fn = { git = "https://github.com/leptos-rs/leptos", branch = "leptos_v0.6", features = [
-#   "axum",
-#   "multipart",
-# ] }
+# gloo-events = { version = "0.2" }
+# leptos = { version = "0.5", features = ["nightly", "rustls"] }
+# leptos_axum = { version = "0.5", optional = true }
+# leptos_meta = { version = "0.5", features = ["nightly"] }
+# leptos_router = { version = "0.5", features = ["nightly"] }
+leptos = { git = "https://github.com/leptos-rs/leptos", branch = "main", features = [
+  "nightly",
+  "rustls",
+] }
+leptos_axum = { git = "https://github.com/leptos-rs/leptos", branch = "main", optional = true }
+leptos_meta = { git = "https://github.com/leptos-rs/leptos", branch = "main", features = [
+  "nightly",
+] }
+leptos_router = { git = "https://github.com/leptos-rs/leptos", branch = "main", features = [
+  "nightly",
+] }
+server_fn = { git = "https://github.com/leptos-rs/leptos", branch = "main", features = [
+  "serde-lite",
+  "multipart",
+] }
 log = "0.4"
 tokio = { version = "1", optional = true }
 tokio-util = { version = "0.7", features = ["io"], optional = true }
+tokio-stream = { version = "0.1", optional = true }
 tower = { version = "0.4", optional = true }
-tower-http = { version = "0.4", features = ["fs"], optional = true }
+# tower-http = { version = "0.4", features = ["fs"], optional = true }
+tower-http = { version = "0.5", features = [
+  "fs",
+  "tracing",
+  "trace",
+], optional = true }
 wasm-bindgen = "0.2"
-wasm-bindgen-futures = "0.4"
-wasm-streams = "0.4"
+# wasm-bindgen-futures = "0.4"
+# wasm-streams = "0.4"
 thiserror = "1.0.38"
 tracing = { version = "0.1", optional = true }
-http = "0.2"
-phosphor-leptos = "0.2.1"
+# http = "0.2"
+http = "1"
+# phosphor-leptos = "0.2.1"
+phosphor-leptos = { path = "../../SorenHolstHansen/phosphor-leptos" }
 sqlx = { version = "0.7.3", features = [
   "postgres",
   "macros",
@@ -56,10 +67,16 @@ sqlx = { version = "0.7.3", features = [
   "uuid",
 ], optional = true }
 dotenvy = { version = "0.15.7", optional = true, features = ["clap"] }
-axum_session_auth = { version = "0.9", features = [
+# axum_session_auth = { version = "0.9", features = [
+#   "postgres-rustls",
+# ], optional = true }
+# axum_session = { version = "0.9", features = [
+#   "postgres-rustls",
+# ], optional = true }
+axum_session_auth = { version = "0.12", features = [
   "postgres-rustls",
 ], optional = true }
-axum_session = { version = "0.9", features = [
+axum_session = { version = "0.12", features = [
   "postgres-rustls",
 ], optional = true }
 serde = { version = "1", features = ["derive"] }
@@ -75,7 +92,7 @@ reqwest = { version = "0.11", default-features = false, features = [
   "rustls-tls",
   "json",
   "stream",
-] }
+], optional = true }
 web-sys = { version = "0.3.67", features = [
   "AbortController",
   "AbortSignal",
@@ -100,19 +117,15 @@ tracing-subscriber = { version = "0.3", features = [
 ], optional = true }
 markdown = "1.0.0-alpha.16"
 mime_guess = "2"
+notify = { version = "6.1.1", optional = true }
 
 [features]
-hydrate = [
-  "leptos/hydrate",
-  "leptos_meta/hydrate",
-  "leptos_router/hydrate",
-  "dep:gloo-net",
-  "dep:gloo-storage",
-]
+hydrate = ["leptos/hydrate", "leptos_meta/hydrate", "leptos_router/hydrate"]
 ssr = [
   "dep:axum",
   "dep:tokio",
   "dep:tokio-util",
+  "dep:tokio-stream",
   "dep:tower",
   "dep:tower-http",
   "dep:leptos_axum",
@@ -125,14 +138,16 @@ ssr = [
   "dep:dotenvy",
   "dep:axum_session_auth",
   "dep:axum_session",
-
+  "dep:reqwest",
   "dep:async-trait",
   "dep:anyhow",
   "dep:struct-convert",
   "dep:oauth2",
   "dep:ttl_cache",
   "dep:async-openai",
+  "dep:notify",
 ]
+notify = ["dep:notify"]
 
 [build-dependencies]
 clap_mangen = "0.2"

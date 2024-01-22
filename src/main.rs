@@ -64,7 +64,7 @@ async fn main() -> anyhow::Result<()> {
     .nest("/openai/v1", miko::server::localai::routes(state.clone()))
     .nest("/api/v1", miko::server::routes(state.clone()))
     .route(
-      "/bff/*fn_name",
+      "/api/*fn_name",
       get(handlers::server_fn_handler).post(handlers::server_fn_handler),
     )
     .leptos_routes_with_handler(state.routes.clone(), get(handlers::leptos_routes_handler))
@@ -79,10 +79,8 @@ async fn main() -> anyhow::Result<()> {
   // run our app with hyper
   // `axum::Server` is a re-export of `hyper::Server`
   tracing::info!("listening on http://{}", &addr);
-  axum::Server::bind(&addr)
-    .serve(app.into_make_service())
-    .await
-    .unwrap();
+  let listener = tokio::net::TcpListener::bind(&addr).await?;
+  axum::serve(listener, app.into_make_service()).await?;
   Ok(())
 }
 

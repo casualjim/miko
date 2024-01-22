@@ -109,6 +109,17 @@ pub fn App() -> impl IntoView {
     <Link rel="icon" href="/images/happy-egg.svg"/>
     <Link rel="mask-icon" href="/images/happy-egg.mono.svg"/>
     <Link rel="apple-touch-icon" href="/images/happy-egg.180px.png"/>
+    <Link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" integrity="sha512-hasIneQUHlh06VNBe7f6ZcHmeRTLIaQWFd43YriJ0UND19bvYRauxthDg8E4eVNPm9bRUhr5JGeqH7FRFXQu5g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <Script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></Script>
+    <Script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js" integrity="sha512-i0JFeiLhgBAMGfIEVqMQwALhhse1orgl34XyotSUNiNbDIB1qS9IK53sDochCIrwvj4nJ51CsDSOqhGyhZITGg==" crossorigin="anonymous" referrerpolicy="no-referrer"></Script>
+    <Script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js" integrity="sha512-H69VMoQ814lKjFuFwLImb4OwoK8Rm8fcvsqZexaxjp/VkJfEnrt5TO7oaOdNlMf/j51QUctfLTe8+rgozW7l2A==" crossorigin="anonymous" referrerpolicy="no-referrer"></Script>
+    <Script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js" integrity="sha512-wW8K3TEH5ZViD4aMPzwPdhXKs/Kb5MAm7qLRd3QliYlHy0u9utSKZsZzqlZAgJ9xxXp81acwnrZVZ8oTfoLG1g==" crossorigin="anonymous" referrerpolicy="no-referrer"></Script>
+    <Script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/go.min.js" integrity="sha512-wsnZc3vH14xwbbaoAwkar86729DTpz6wx48ABISfmaKLZwP/lm8d7Z+Hmr9JKobAENs0qO/cGounL7LUEg10Pg==" crossorigin="anonymous" referrerpolicy="no-referrer"></Script>
+    <Script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/rust.min.js" integrity="sha512-vp/BmF+BW+m/wuIgSZQYqoB2Rwz46sD8YnVM51unvyvOcqYOwyP1BMAO4lHfmVpSZ+eeJAPnkk2fv7mdQN5HDw==" crossorigin="anonymous" referrerpolicy="no-referrer"></Script>
+    <Script defer="true">
+      "hljs.highlightAll();"
+      "console.log('highlighting code');"
+    </Script>
 
     // sets the document title
     <Title text="Miko - the helpful robot"/>
@@ -133,6 +144,7 @@ pub fn App() -> impl IntoView {
         </Transition>
       </SidebarLayoutWithHeader>
     </Router>
+
   }
 }
 

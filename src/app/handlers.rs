@@ -29,26 +29,35 @@ pub type AuthSession = axum_session_auth::AuthSession<User, Uuid, SessionPgPool,
 cfg_if! {
   if #[cfg(feature = "ssr")] {
 
-    pub async fn server_fn_handler(State(app_state): State<AppState>, auth_session: AuthSession, path: Path<String>, headers: HeaderMap, raw_query: RawQuery,
-          request: Request<AxumBody>) -> impl IntoResponse {
+    pub async fn server_fn_handler(
+      State(app_state): State<AppState>,
+      auth_session: AuthSession,
+      path: Path<String>,
+      request: Request<AxumBody>) -> impl IntoResponse {
 
         tracing::info!("{} {:?}", request.method(), path);
 
-        handle_server_fns_with_context(path, headers, raw_query, move || {
+        // handle_server_fns_with_context(path, headers, raw_query, move || {
+        //     provide_context(auth_session.clone());
+        //     provide_context(app_state.pool.clone());
+        // }, request).await
+        handle_server_fns_with_context(move || {
             provide_context(auth_session.clone());
             provide_context(app_state.pool.clone());
+            provide_context(app_state.clone());
         }, request).await
     }
 
     pub async fn leptos_routes_handler(auth_session: AuthSession, State(app_state): State<AppState>, req: Request<AxumBody>) -> Response{
-            let handler = leptos_axum::render_route_with_context(app_state.leptos_options.clone(),
-            app_state.routes.clone(),
-            move || {
-                provide_context(auth_session.clone());
-                provide_context(app_state.pool.clone());
-                provide_context(app_state.clone());
-            },
-            App
+        let handler = leptos_axum::render_route_with_context(
+          app_state.leptos_options.clone(),
+          app_state.routes.clone(),
+          move || {
+              provide_context(auth_session.clone());
+              provide_context(app_state.pool.clone());
+              provide_context(app_state.clone());
+          },
+          App
         );
         handler(req).await.into_response()
     }

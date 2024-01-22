@@ -67,7 +67,7 @@ pub fn Modal(id: &'static str, show_modal: RwSignal<bool>, children: Children) -
 
   view! {
     <dialog id=id class="modal backdrop-blur w-screen" class:modal-open=show_modal>
-      <div class="modal-box" node_ref=modal_ref>
+      <div class="modal-box max-w-fit" node_ref=modal_ref>
         <form method="dialog">
           <button class="btn btn-sm btn-ghost absolute right-2 top-2" on:click=close_modal>
             "✕"

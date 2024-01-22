@@ -3,13 +3,13 @@ use leptos::*;
 #[cfg(feature = "ssr")] use crate::app::{app_state, auth};
 use crate::models::User;
 
-#[server(GetUser, "/bff")]
+#[server(GetUser, "/api")]
 pub async fn get_user() -> Result<Option<User>, ServerFnError> {
   let auth = auth()?;
   Ok(auth.current_user)
 }
 
-#[server(OauthLogin, "/bff")]
+#[server(OauthLogin, "/api")]
 pub async fn oauth_login() -> Result<(), ServerFnError> {
   let app_state = app_state()?;
   // Google supports Proof Key for Code Exchange (PKCE - https://oauth.net/2/pkce/).
@@ -34,7 +34,7 @@ pub async fn oauth_login() -> Result<(), ServerFnError> {
   Ok(())
 }
 
-#[server(Logout, "/bff")]
+#[server(Logout, "/api")]
 pub async fn logout() -> Result<(), ServerFnError> {
   let auth = auth()?;
 

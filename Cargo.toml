@@ -7,17 +7,45 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-axum = { version = "0.7", optional = true, features = [
-  "macros",
-  "multipart",
-] } # axum = { version = "0.6", features = ["macros", "multipart"], optional = true }
+anyhow = { version = "1", optional = true }
+async-trait = { version = "0.1", optional = true }
+axum = { version = "0.7", optional = true, features = ["macros", "multipart"] }
+# axum = { version = "0.6", features = ["macros", "multipart"], optional = true }
+# axum_session_auth = { version = "0.9", features = [
+#   "postgres-rustls",
+# ], optional = true }
+# axum_session = { version = "0.9", features = [
+#   "postgres-rustls",
+# ], optional = true }
+axum_session_auth = { version = "0.12", features = [
+  "postgres-rustls",
+], optional = true }
+axum_session = { version = "0.12", features = [
+  "postgres-rustls",
+], optional = true }
+async-openai = { version = "0.18.0", default-features = false, features = [
+  "rustls-webpki-roots",
+], optional = true }
+
+bytes = "1"
+
+candle-core = "0.3"
+cfg-if = "1"
+chrono = { version = "0.4", features = ["serde"] }
 console_error_panic_hook = "0.1"
 console_log = "1"
-cfg-if = "1"
+
+derive_builder = "0.13.0"
+dotenvy = { version = "0.15.7", optional = true, features = ["clap"] }
+
 futures = "0.3"
+
 gloo-net = { version = "0.5" }
 gloo-storage = { version = "0.3" }
 gloo-events = { version = "0.2" }
+
+http = "1"
+
 # gloo-events = { version = "0.2" }
 # leptos = { version = "0.5", features = ["nightly", "rustls"] }
 # leptos_axum = { version = "0.5", optional = true }
@@ -34,11 +62,40 @@ leptos_meta = { git = "https://github.com/leptos-rs/leptos", branch = "main", fe
 leptos_router = { git = "https://github.com/leptos-rs/leptos", branch = "main", features = [
   "nightly",
 ] }
+log = "0.4"
+
+markdown = "1.0.0-alpha.16"
+mime_guess = "2"
+
+notify = { version = "6.1.1", optional = true }
+
+oauth2 = { version = "4", optional = true }
+
+phosphor-leptos = { path = "../../SorenHolstHansen/phosphor-leptos" }
+
+reqwest = { version = "0.11", default-features = false, features = [
+  "rustls-tls",
+  "json",
+  "stream",
+], optional = true }
+
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1" }
 server_fn = { git = "https://github.com/leptos-rs/leptos", branch = "main", features = [
   "serde-lite",
   "multipart",
 ] }
-log = "0.4"
+struct-convert = { version = "1", optional = true }
+sqlx = { version = "0.7.3", features = [
+  "postgres",
+  "macros",
+  "chrono",
+  "runtime-tokio-rustls",
+  "json",
+  "uuid",
+], optional = true }
+
+thiserror = "1.0.38"
 tokio = { version = "1", optional = true }
 tokio-util = { version = "0.7", features = ["io"], optional = true }
 tokio-stream = { version = "0.1", optional = true }
@@ -49,50 +106,21 @@ tower-http = { version = "0.5", features = [
   "tracing",
   "trace",
 ], optional = true }
-wasm-bindgen = "0.2"
 # wasm-bindgen-futures = "0.4"
 # wasm-streams = "0.4"
-thiserror = "1.0.38"
 tracing = { version = "0.1", optional = true }
-# http = "0.2"
-http = "1"
-# phosphor-leptos = "0.2.1"
-phosphor-leptos = { path = "../../SorenHolstHansen/phosphor-leptos" }
-sqlx = { version = "0.7.3", features = [
-  "postgres",
-  "macros",
+tracing-subscriber = { version = "0.3", features = [
+  "json",
+  "serde",
+  "env-filter",
   "chrono",
-  "runtime-tokio-rustls",
-  "json",
-  "uuid",
 ], optional = true }
-dotenvy = { version = "0.15.7", optional = true, features = ["clap"] }
-# axum_session_auth = { version = "0.9", features = [
-#   "postgres-rustls",
-# ], optional = true }
-# axum_session = { version = "0.9", features = [
-#   "postgres-rustls",
-# ], optional = true }
-axum_session_auth = { version = "0.12", features = [
-  "postgres-rustls",
-], optional = true }
-axum_session = { version = "0.12", features = [
-  "postgres-rustls",
-], optional = true }
-serde = { version = "1", features = ["derive"] }
-struct-convert = { version = "1", optional = true }
-uuid = { version = "1", features = ["wasm-bindgen", "serde", "v4"] }
-serde_json = { version = "1" }
-async-trait = { version = "0.1", optional = true }
-anyhow = { version = "1", optional = true }
-chrono = { version = "0.4", features = ["serde"] }
-oauth2 = { version = "4", optional = true }
 ttl_cache = { version = "0.5.1", optional = true }
-reqwest = { version = "0.11", default-features = false, features = [
-  "rustls-tls",
-  "json",
-  "stream",
-], optional = true }
+typed-builder = "0.18"
+
+uuid = { version = "1", features = ["wasm-bindgen", "serde", "v4"] }
+
+wasm-bindgen = "0.2"
 web-sys = { version = "0.3.67", features = [
   "AbortController",
   "AbortSignal",
@@ -104,20 +132,6 @@ web-sys = { version = "0.3.67", features = [
   "FileReader",
   "Node",
 ] }
-async-openai = { version = "0.18.0", default-features = false, features = [
-  "rustls-webpki-roots",
-], optional = true }
-derive_builder = "0.12.0"
-bytes = "1"
-tracing-subscriber = { version = "0.3", features = [
-  "json",
-  "serde",
-  "env-filter",
-  "chrono",
-], optional = true }
-markdown = "1.0.0-alpha.16"
-mime_guess = "2"
-notify = { version = "6.1.1", optional = true }
 
 [features]
 hydrate = ["leptos/hydrate", "leptos_meta/hydrate", "leptos_router/hydrate"]

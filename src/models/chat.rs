@@ -81,7 +81,7 @@ pub struct SavedMessage {
   pub temporary: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ChatMessage {
   System(ChatCompletionRequestSystemMessage),
   User(ChatCompletionRequestUserMessage),

@@ -1,4 +1,5 @@
 mod chat;
+pub mod embeddings;
 mod files;
 mod user;
 

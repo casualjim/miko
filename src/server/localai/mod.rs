@@ -1,3 +1,5 @@
+mod embeddings;
+mod chat;
 use axum::{extract::State, response::IntoResponse, routing::get, Json};
 
 use crate::{app::state::AppState, Result};
@@ -5,6 +7,7 @@ use crate::{app::state::AppState, Result};
 pub fn routes(app_state: AppState) -> axum::Router<AppState> {
   axum::Router::new()
     .route("/models", get(list_models))
+    .nest("/chat", chat::routes(app_state.clone()))
     .with_state(app_state)
 }
 

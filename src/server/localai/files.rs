@@ -1,14 +1,14 @@
 use async_openai::types::{
-  CreateEmbeddingRequest, DeleteFileResponse, ListFilesResponse, OpenAIFile,
+  CreateFileRequest, DeleteFileResponse, FileInput, ListFilesResponse, OpenAIFile,
 };
 use axum::{
-  extract::{Query, State},
-  response::IntoResponse,
-  routing::post,
+  extract::{Multipart, Path, Query, State},
+  routing::get,
   Json,
 };
+use serde::{Deserialize, Serialize};
 
-use crate::{app::state::AppState, models, Result};
+use crate::{app::state::AppState, Result};
 
 pub fn routes(app_state: AppState) -> axum::Router<AppState> {
   axum::Router::new()
@@ -18,16 +18,44 @@ pub fn routes(app_state: AppState) -> axum::Router<AppState> {
     .with_state(app_state)
 }
 
-#[axum::debug_handler]
+async fn create_file_request(mut request: Multipart) -> Result<CreateFileRequest> {
+  let mut req = CreateFileRequest::default();
+  while let Ok(Some(field)) = request.next_field().await {
+    if let Some(field_name) = field.name() {
+      match field_name {
+        "file" => {
+          req.file = FileInput {
+            source: async_openai::types::InputSource::Bytes {
+              filename: field.file_name().unwrap_or_default().to_string(),
+              bytes: field
+                .bytes()
+                .await
+                .map_err(|e| crate::Error::InvalidArgument(e.to_string()))?,
+            },
+          }
+        }
+        "purpose" => {
+          req.purpose = field
+            .text()
+            .await
+            .map_err(|e| crate::Error::InvalidArgument(e.to_string()))?
+        }
+        _ => {}
+      }
+    }
+  }
+  Ok(req)
+}
+
 #[tracing::instrument(skip(app_state))]
 async fn create(
   State(app_state): State<AppState>,
-  mut multipart: axum::extract::Multipart,
+  multipart: axum::extract::Multipart,
 ) -> Result<Json<OpenAIFile>> {
   app_state
     .openai_client()
     .files()
-    .create(params)
+    .create(create_file_request(multipart).await?)
     .await
     .map_err(Into::into)
     .map(Into::into)
@@ -38,7 +66,6 @@ struct ListFilesRequest {
   pub purpose: Option<String>,
 }
 
-#[axum::debug_handler]
 #[tracing::instrument(skip(app_state))]
 async fn list_files(
   State(app_state): State<AppState>,
@@ -53,7 +80,6 @@ async fn list_files(
     .map(Into::into)
 }
 
-#[axum::debug_handler]
 #[tracing::instrument(skip(app_state))]
 async fn get_file(
   State(app_state): State<AppState>,
@@ -68,7 +94,6 @@ async fn get_file(
     .map(Into::into)
 }
 
-#[axum::debug_handler]
 #[tracing::instrument(skip(app_state))]
 async fn delete_file(
   State(app_state): State<AppState>,
@@ -83,7 +108,6 @@ async fn delete_file(
     .map(Into::into)
 }
 
-#[axum::debug_handler]
 #[tracing::instrument(skip(app_state))]
 async fn get_file_content(
   State(app_state): State<AppState>,

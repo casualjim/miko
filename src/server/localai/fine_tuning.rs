@@ -1,16 +1,14 @@
 use async_openai::types::{
-  CreateEmbeddingRequest, CreateFineTuneRequest, FineTuningJob, ListFineTuningJobEventsResponse,
-  ListPaginatedFineTuningJobsResponse,
+  FineTuningJob, ListFineTuningJobEventsResponse, ListPaginatedFineTuningJobsResponse,
 };
 use axum::{
   extract::{Path, Query, State},
-  response::IntoResponse,
-  routing::post,
+  routing::{get, post},
   Json,
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{app::state::AppState, models, Result};
+use crate::{app::state::AppState, models::fine_tuning::CreateFineTuningJobRequest, Result};
 
 pub fn routes(app_state: AppState) -> axum::Router<AppState> {
   axum::Router::new()
@@ -21,16 +19,15 @@ pub fn routes(app_state: AppState) -> axum::Router<AppState> {
     .with_state(app_state)
 }
 
-#[axum::debug_handler]
 #[tracing::instrument(skip(app_state))]
 async fn create_job(
   State(app_state): State<AppState>,
-  Json(request): Json<CreateFineTuneRequest>,
+  Json(request): Json<CreateFineTuningJobRequest>,
 ) -> Result<Json<FineTuningJob>> {
   app_state
     .openai_client()
     .fine_tuning()
-    .create(request)
+    .create(request.into())
     .await
     .map_err(Into::into)
     .map(Into::into)
@@ -42,7 +39,6 @@ struct ListJobsQuery {
   limit: Option<usize>,
 }
 
-#[axum::debug_handler]
 #[tracing::instrument(skip(app_state))]
 async fn list_jobs(
   State(app_state): State<AppState>,
@@ -57,7 +53,6 @@ async fn list_jobs(
     .map(Into::into)
 }
 
-#[axum::debug_handler]
 #[tracing::instrument(skip(app_state))]
 async fn get_job(
   State(app_state): State<AppState>,
@@ -72,7 +67,6 @@ async fn get_job(
     .map(Into::into)
 }
 
-#[axum::debug_handler]
 #[tracing::instrument(skip(app_state))]
 async fn list_job_events(
   State(app_state): State<AppState>,
@@ -82,13 +76,12 @@ async fn list_job_events(
   app_state
     .openai_client()
     .fine_tuning()
-    .list_events(&fine_tuning_job_id, &parms)
+    .list_events(&fine_tuning_job_id, &params)
     .await
     .map_err(Into::into)
     .map(Into::into)
 }
 
-#[axum::debug_handler]
 #[tracing::instrument(skip(app_state))]
 async fn cancel_job(
   State(app_state): State<AppState>,

@@ -6,9 +6,9 @@ mod fine_tuning;
 mod images;
 mod models;
 mod moderations;
-use axum::{extract::State, response::IntoResponse, routing::get, Json};
+mod provider;
 
-use crate::{app::state::AppState, Result};
+use crate::app::state::AppState;
 
 pub fn routes(app_state: AppState) -> axum::Router<AppState> {
   axum::Router::new()

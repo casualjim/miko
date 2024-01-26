@@ -1,7 +1,10 @@
-use async_openai::types::CreateEmbeddingRequest;
-use axum::{extract::State, response::IntoResponse, routing::post, Json};
+use axum::{extract::State, routing::post, Json};
 
-use crate::{app::state::AppState, models, Result};
+use crate::{
+  app::state::AppState,
+  models::embeddings::{CreateEmbeddingRequest, CreateEmbeddingResponse},
+  Result,
+};
 
 pub fn routes(app_state: AppState) -> axum::Router<AppState> {
   axum::Router::new()
@@ -9,17 +12,16 @@ pub fn routes(app_state: AppState) -> axum::Router<AppState> {
     .with_state(app_state)
 }
 
-#[axum::debug_handler]
 #[tracing::instrument(skip(app_state))]
 async fn create(
   State(app_state): State<AppState>,
   Json(params): Json<CreateEmbeddingRequest>,
-) -> Result<Json<models::embeddings::CreateEmbeddingResponse>> {
+) -> Result<Json<CreateEmbeddingResponse>> {
   app_state
     .openai_client()
     .embeddings()
-    .create(params)
+    .create(params.into())
     .await
     .map_err(Into::into)
-    .map(Into::into)
+    .map(|v| Json(v.into()))
 }

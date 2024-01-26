@@ -7,7 +7,7 @@ use axum::{
     sse::{Event, KeepAlive},
     IntoResponse, Sse,
   },
-  routing::{get, post},
+  routing::post,
   Json,
 };
 use futures::StreamExt;

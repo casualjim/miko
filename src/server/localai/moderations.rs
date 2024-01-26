@@ -1,7 +1,7 @@
-use async_openai::types::{CreateModerationRequest, CreateModerationResponse};
-use axum::{extract::State, response::IntoResponse, routing::post, Json};
+use async_openai::types::CreateModerationResponse;
+use axum::{extract::State, routing::post, Json};
 
-use crate::{app::state::AppState, models, Result};
+use crate::{app::state::AppState, models::moderation::CreateModerationRequest, Result};
 
 pub fn routes(app_state: AppState) -> axum::Router<AppState> {
   axum::Router::new()
@@ -18,7 +18,7 @@ async fn create(
   app_state
     .openai_client()
     .moderations()
-    .create(params)
+    .create(params.into())
     .await
     .map_err(Into::into)
     .map(Into::into)

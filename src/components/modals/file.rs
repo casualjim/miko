@@ -1,6 +1,4 @@
 use leptos::*;
-use wasm_bindgen::{closure::Closure, JsCast};
-use web_sys::{File, FileReader};
 
 use crate::{
   api,

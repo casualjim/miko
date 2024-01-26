@@ -54,14 +54,19 @@ impl From<CreateEmbeddingRequest> for async_openai::types::CreateEmbeddingReques
   fn from(req: CreateEmbeddingRequest) -> Self {
     Self {
       model: req.model,
-      input: req.input.map(|input| match input {
-        EmbeddingInput::String(s) => async_openai::types::EmbeddingInput::String(s),
-        EmbeddingInput::StringArray(arr) => async_openai::types::EmbeddingInput::StringArray(arr),
-        EmbeddingInput::IntegerArray(arr) => async_openai::types::EmbeddingInput::IntegerArray(arr),
-        EmbeddingInput::ArrayOfIntegerArray(arr) => {
-          async_openai::types::EmbeddingInput::ArrayOfIntegerArray(arr)
-        }
-      }),
+      input: req
+        .input
+        .map(|input| match input {
+          EmbeddingInput::String(s) => async_openai::types::EmbeddingInput::String(s),
+          EmbeddingInput::StringArray(arr) => async_openai::types::EmbeddingInput::StringArray(arr),
+          EmbeddingInput::IntegerArray(arr) => {
+            async_openai::types::EmbeddingInput::IntegerArray(arr)
+          }
+          EmbeddingInput::ArrayOfIntegerArray(arr) => {
+            async_openai::types::EmbeddingInput::ArrayOfIntegerArray(arr)
+          }
+        })
+        .unwrap_or_else(|| async_openai::types::EmbeddingInput::String("".to_string())),
       encoding_format: req.encoding_format.map(|format| match format {
         EncodingFormat::Float => async_openai::types::EncodingFormat::Float,
         EncodingFormat::Base64 => async_openai::types::EncodingFormat::Base64,
@@ -94,6 +99,17 @@ impl From<Embedding> for async_openai::types::Embedding {
   }
 }
 
+#[cfg(feature = "ssr")]
+impl From<async_openai::types::Embedding> for Embedding {
+  fn from(embedding: async_openai::types::Embedding) -> Self {
+    Self {
+      index: embedding.index,
+      object: embedding.object,
+      embedding: embedding.embedding,
+    }
+  }
+}
+
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct EmbeddingUsage {
   /// The number of tokens used by the prompt.
@@ -105,6 +121,16 @@ pub struct EmbeddingUsage {
 #[cfg(feature = "ssr")]
 impl From<EmbeddingUsage> for async_openai::types::EmbeddingUsage {
   fn from(usage: EmbeddingUsage) -> Self {
+    Self {
+      prompt_tokens: usage.prompt_tokens,
+      total_tokens: usage.total_tokens,
+    }
+  }
+}
+
+#[cfg(feature = "ssr")]
+impl From<async_openai::types::EmbeddingUsage> for EmbeddingUsage {
+  fn from(usage: async_openai::types::EmbeddingUsage) -> Self {
     Self {
       prompt_tokens: usage.prompt_tokens,
       total_tokens: usage.total_tokens,
@@ -129,7 +155,7 @@ impl From<async_openai::types::CreateEmbeddingResponse> for CreateEmbeddingRespo
     Self {
       object: res.object,
       model: res.model,
-      data: res.data.into_iter().map(Embedding::from).collect(),
+      data: res.data.into_iter().map(|v| v.into()).collect(),
       usage: EmbeddingUsage::from(res.usage),
     }
   }

@@ -78,7 +78,7 @@ cfg_if! {
 
     pub async fn get_text_file(chat_id: String, file_name: String) -> Option<String> {
       let uri = format!("/api/v1/workspace/{}/files/{}", chat_id, file_name);
-      let mut res = reqwest::get(uri).await.ok()?;
+      let res = reqwest::get(uri).await.ok()?;
       let text = res.text().await.ok()?;
       Some(text)
 

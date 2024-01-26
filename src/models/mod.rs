@@ -1,6 +1,10 @@
+pub mod audio;
 mod chat;
 pub mod embeddings;
 mod files;
+pub mod fine_tuning;
+pub mod images;
+pub mod moderation;
 mod user;
 
 pub use chat::*;

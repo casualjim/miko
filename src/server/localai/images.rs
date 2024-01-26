@@ -1,10 +1,13 @@
 use async_openai::types::{
-  CreateEditRequest, CreateEmbeddingRequest, CreateImageEditRequest, CreateImageRequest,
-  CreateImageVariationRequest, Image,
+  CreateImageEditRequest, CreateImageVariationRequest, ImageInput, ImagesResponse,
 };
-use axum::{extract::State, response::IntoResponse, routing::post, Json};
+use axum::{
+  extract::{Multipart, State},
+  routing::post,
+  Json,
+};
 
-use crate::{app::state::AppState, models, Result};
+use crate::{app::state::AppState, models::images::CreateImageRequest, Result};
 
 pub fn routes(app_state: AppState) -> axum::Router<AppState> {
   axum::Router::new()
@@ -14,46 +17,218 @@ pub fn routes(app_state: AppState) -> axum::Router<AppState> {
     .with_state(app_state)
 }
 
-#[axum::debug_handler]
 #[tracing::instrument(skip(app_state))]
 async fn create(
   State(app_state): State<AppState>,
   Json(params): Json<CreateImageRequest>,
-) -> Result<Json<Image>> {
+) -> Result<Json<ImagesResponse>> {
   app_state
     .openai_client()
     .images()
-    .create(params)
+    .create(params.into())
     .await
     .map_err(Into::into)
     .map(Into::into)
 }
 
-#[axum::debug_handler]
+async fn create_image_edit_request(mut request: Multipart) -> Result<CreateImageEditRequest> {
+  let mut req = CreateImageEditRequest::default();
+  while let Ok(Some(field)) = request.next_field().await {
+    if let Some(field_name) = field.name() {
+      match field_name {
+        "image" => {
+          req.image = async_openai::types::ImageInput {
+            source: async_openai::types::InputSource::Bytes {
+              filename: field.file_name().unwrap_or_default().to_string(),
+              bytes: field
+                .bytes()
+                .await
+                .map_err(|e| crate::Error::InvalidArgument(e.to_string()))?,
+            },
+          }
+        }
+        "prompt" => {
+          req.prompt = field
+            .text()
+            .await
+            .map_err(|e| crate::Error::InvalidArgument(e.to_string()))?
+        }
+        "mask" => {
+          req.mask = Some(ImageInput {
+            source: async_openai::types::InputSource::Bytes {
+              filename: field.file_name().unwrap_or_default().to_string(),
+              bytes: field
+                .bytes()
+                .await
+                .map_err(|e| crate::Error::InvalidArgument(e.to_string()))?,
+            },
+          })
+        }
+        "model" => {
+          req.model = Some(
+            match field
+              .text()
+              .await
+              .map_err(|e| crate::Error::InvalidArgument(e.to_string()))?
+              .as_str()
+            {
+              "dall-e-3" => async_openai::types::ImageModel::DallE3,
+              "dall-e-2" => async_openai::types::ImageModel::DallE2,
+              s if !s.is_empty() => async_openai::types::ImageModel::Other(s.to_string()),
+              _ => async_openai::types::ImageModel::DallE2,
+            },
+          )
+        }
+        "n" => {
+          req.n = field
+            .text()
+            .await
+            .map_err(|e| crate::Error::InvalidArgument(e.to_string()))?
+            .parse()
+            .ok()
+        }
+        "size" => {
+          req.size = match field
+            .text()
+            .await
+            .map_err(|e| crate::Error::InvalidArgument(e.to_string()))?
+            .as_str()
+          {
+            "256x256" => Some(async_openai::types::DallE2ImageSize::S256x256),
+            "512x512" => Some(async_openai::types::DallE2ImageSize::S512x512),
+            "1024x1024" => Some(async_openai::types::DallE2ImageSize::S1024x1024),
+            _ => None,
+          }
+        }
+        "response_format" => {
+          req.response_format = match field
+            .text()
+            .await
+            .map_err(|e| crate::Error::InvalidArgument(e.to_string()))?
+            .as_str()
+          {
+            "url" => Some(async_openai::types::ResponseFormat::Url),
+            "b64_json" => Some(async_openai::types::ResponseFormat::B64Json),
+            _ => None,
+          }
+        }
+        "user" => {
+          req.user = Some(
+            field
+              .text()
+              .await
+              .map_err(|e| crate::Error::InvalidArgument(e.to_string()))?,
+          )
+        }
+        _ => {}
+      }
+    }
+  }
+  Ok(req)
+}
+
 #[tracing::instrument(skip(app_state))]
 async fn edit(
   State(app_state): State<AppState>,
-  Json(params): Json<CreateImageEditRequest>,
-) -> Result<Json<Image>> {
+  request: Multipart,
+) -> Result<Json<ImagesResponse>> {
   app_state
     .openai_client()
     .images()
-    .create_edit(params)
+    .create_edit(create_image_edit_request(request).await?)
     .await
     .map_err(Into::into)
     .map(Into::into)
 }
 
-#[axum::debug_handler]
+async fn create_variation_request(mut request: Multipart) -> Result<CreateImageVariationRequest> {
+  let mut req = CreateImageVariationRequest::default();
+  while let Ok(Some(field)) = request.next_field().await {
+    if let Some(field_name) = field.name() {
+      match field_name {
+        "image" => {
+          req.image = async_openai::types::ImageInput {
+            source: async_openai::types::InputSource::Bytes {
+              filename: field.file_name().unwrap_or_default().to_string(),
+              bytes: field
+                .bytes()
+                .await
+                .map_err(|e| crate::Error::InvalidArgument(e.to_string()))?,
+            },
+          }
+        }
+        "model" => {
+          req.model = Some(
+            match field
+              .text()
+              .await
+              .map_err(|e| crate::Error::InvalidArgument(e.to_string()))?
+              .as_str()
+            {
+              "dall-e-3" => async_openai::types::ImageModel::DallE3,
+              "dall-e-2" => async_openai::types::ImageModel::DallE2,
+              s if !s.is_empty() => async_openai::types::ImageModel::Other(s.to_string()),
+              _ => async_openai::types::ImageModel::DallE2,
+            },
+          )
+        }
+        "n" => {
+          req.n = field
+            .text()
+            .await
+            .map_err(|e| crate::Error::InvalidArgument(e.to_string()))?
+            .parse()
+            .ok()
+        }
+        "size" => {
+          req.size = match field
+            .text()
+            .await
+            .map_err(|e| crate::Error::InvalidArgument(e.to_string()))?
+            .as_str()
+          {
+            "256x256" => Some(async_openai::types::DallE2ImageSize::S256x256),
+            "512x512" => Some(async_openai::types::DallE2ImageSize::S512x512),
+            "1024x1024" => Some(async_openai::types::DallE2ImageSize::S1024x1024),
+            _ => None,
+          }
+        }
+        "response_format" => {
+          req.response_format = match field
+            .text()
+            .await
+            .map_err(|e| crate::Error::InvalidArgument(e.to_string()))?
+            .as_str()
+          {
+            "url" => Some(async_openai::types::ResponseFormat::Url),
+            "b64_json" => Some(async_openai::types::ResponseFormat::B64Json),
+            _ => None,
+          }
+        }
+        "user" => {
+          req.user = Some(
+            field
+              .text()
+              .await
+              .map_err(|e| crate::Error::InvalidArgument(e.to_string()))?,
+          )
+        }
+        _ => {}
+      }
+    }
+  }
+  Ok(req)
+}
+
 #[tracing::instrument(skip(app_state))]
-async fn create(
+async fn variations(
   State(app_state): State<AppState>,
-  Json(params): Json<CreateImageVariationRequest>,
-) -> Result<Json<Image>> {
+  request: Multipart,
+) -> Result<Json<ImagesResponse>> {
   app_state
     .openai_client()
     .images()
-    .create_variation(params)
+    .create_variation(create_variation_request(request).await?)
     .await
     .map_err(Into::into)
     .map(Into::into)

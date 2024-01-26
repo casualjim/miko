@@ -3,7 +3,7 @@ use leptos::{html::Input, logging::log, *};
 use leptos_router::*;
 use phosphor_leptos::{GithubLogo, IconWeight, NotePencil, PencilSimple, TrashSimple};
 use uuid::Uuid;
-use wasm_bindgen::JsCast;
+use wasm_bindgen::JsCast as _;
 use web_sys::{Event, Node, SubmitEvent};
 
 use crate::{
@@ -19,7 +19,7 @@ pub fn Sidebar(
   sidebar_open: ReadSignal<bool>,
   show_logout: RwSignal<bool>,
   is_hovering: ReadSignal<bool>,
-  is_dark: ReadSignal<bool>,
+  is_dark: Signal<bool>,
   #[prop(into)] on_toggle_theme: Callback<ev::Event>,
 ) -> impl IntoView {
   let hover_transition = move || sidebar_open() && is_hovering();
@@ -282,7 +282,7 @@ fn ChatListItem(
 #[component]
 fn SidebarBottom(
   show_logout: RwSignal<bool>,
-  is_dark: ReadSignal<bool>,
+  is_dark: Signal<bool>,
   #[prop(into)] on_toggle_theme: Callback<ev::Event>,
 ) -> impl IntoView {
   view! {
@@ -305,7 +305,7 @@ fn SidebarBottom(
 
 #[component]
 fn ThemeToggle(
-  is_dark: ReadSignal<bool>,
+  is_dark: Signal<bool>,
   #[prop(into)] on_toggle_theme: Callback<ev::Event>,
 ) -> impl IntoView {
   view! {

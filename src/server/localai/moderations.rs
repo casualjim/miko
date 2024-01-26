@@ -9,7 +9,6 @@ pub fn routes(app_state: AppState) -> axum::Router<AppState> {
     .with_state(app_state)
 }
 
-#[axum::debug_handler]
 #[tracing::instrument(skip(app_state))]
 async fn create(
   State(app_state): State<AppState>,

@@ -31,7 +31,7 @@ pub fn CenteredLayout(children: Children) -> impl IntoView {
 #[component]
 pub fn SidebarLayoutWithHeader(
   show_logout: RwSignal<bool>,
-  is_dark: ReadSignal<bool>,
+  is_dark: Signal<bool>,
   chat_id: ReadSignal<Option<Uuid>>,
   #[prop(into)] on_toggle_theme: Callback<ev::Event>,
   children: Children,

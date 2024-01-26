@@ -1,12 +1,14 @@
 use gloo_net::eventsource::futures::EventSource;
 use leptos::{html::Div, logging::log, *};
+use leptos_use::{use_drop_zone, UseDropZoneReturn};
 use phosphor_leptos::{File as PhosphorFile, *};
 use uuid::Uuid;
-use web_sys::{js_sys, DragEvent, Event, File, HtmlInputElement};
+use web_sys::{js_sys, Event, File, HtmlInputElement};
 
 use crate::{api, models::UploadedFile, routes::files::get_files, ChatResource, ShowFileModal};
 
 #[component]
+#[allow(unused_variables)]
 pub fn Workspace(chat_id: ReadSignal<Option<Uuid>>, chats: ChatResource) -> impl IntoView {
   let ShowFileModal(show_file_modal, set_selected_file) = expect_context();
   let (files_to_upload, set_files_to_upload) = create_signal::<Vec<File>>(vec![]);
@@ -29,35 +31,6 @@ pub fn Workspace(chat_id: ReadSignal<Option<Uuid>>, chats: ChatResource) -> impl
     }
   });
 
-  create_effect(move |_| {
-    if let Some(chat_id) = chat_id() {
-      let api_url = format!("/api/v1/workspace/{}/watch", chat_id);
-      let mut source = EventSource::new(&api_url).unwrap();
-      let mut sub = source.subscribe("message").unwrap();
-
-      on_cleanup(move || source.close());
-
-      use futures::StreamExt;
-      spawn_local(async move {
-        let files = get_files(chat_id).await.unwrap_or_default();
-        set_files.update(|v| *v = files);
-
-        while let Some(event) = sub.next().await {
-          if let Ok((_, event)) = event {
-            if let Some(data) = event.data().as_string() {
-              let file: UploadedFile = serde_json::from_str(&data).unwrap();
-              set_files.update(|v| {
-                if !v.iter().any(|f| f.file_name == file.file_name) {
-                  v.push(file)
-                }
-              });
-            }
-          }
-        }
-      });
-    }
-  });
-
   let upload_action = create_action(move |(chat_id, files): &(Uuid, Vec<File>)| {
     let chat_id = *chat_id;
     let files = files.to_vec();
@@ -70,35 +43,51 @@ pub fn Workspace(chat_id: ReadSignal<Option<Uuid>>, chats: ChatResource) -> impl
     }
   });
 
+  let upload_changed = upload_action.value();
+  let (is_watching, set_is_watching) = create_signal(false);
+  create_effect(move |_| {
+    if upload_changed().is_some() && !is_watching() {
+      if let Some(chat_id) = chat_id() {
+        let api_url = format!("/api/v1/workspace/{}/watch", chat_id);
+        let mut source = EventSource::new(&api_url).unwrap();
+        let mut sub = source.subscribe("message").unwrap();
+
+        on_cleanup(move || {
+          source.close();
+          set_is_watching.update(|v| *v = false);
+        });
+        set_is_watching.update(|v| *v = true);
+
+        use futures::StreamExt;
+        spawn_local(async move {
+          let files = get_files(chat_id).await.unwrap_or_default();
+          set_files.update(|v| *v = files);
+
+          while let Some(event) = sub.next().await {
+            if let Ok((_, event)) = event {
+              if let Some(data) = event.data().as_string() {
+                let file: UploadedFile = serde_json::from_str(&data).unwrap();
+                set_files.update(|v| {
+                  if !v.iter().any(|f| f.file_name == file.file_name) {
+                    v.push(file)
+                  }
+                });
+              }
+            }
+          }
+        });
+      }
+    }
+  });
+
   create_effect(move |_| {
     let chat_id = chat_id();
     let files = files_to_upload();
+
     if let Some(chat_id) = chat_id {
       upload_action.dispatch((chat_id, files));
     }
   });
-
-  let drop_zone_ref = create_node_ref::<Div>();
-
-  let prevent_defaults = move |ev: DragEvent| {
-    ev.prevent_default();
-    ev.stop_propagation();
-  };
-
-  let on_drop = move |ev: DragEvent| {
-    ev.prevent_default();
-    ev.stop_propagation();
-
-    if let Some(data_transfer) = ev.data_transfer() {
-      let files = data_transfer
-        .files()
-        .map(|f| js_sys::Array::from(&f).to_vec())
-        .unwrap_or_default()
-        .into_iter()
-        .map(File::from);
-      set_files_to_upload.update(|v| v.extend(files));
-    }
-  };
 
   let select_file = move |file: UploadedFile| {
     set_selected_file(Some(file));
@@ -125,19 +114,15 @@ pub fn Workspace(chat_id: ReadSignal<Option<Uuid>>, chats: ChatResource) -> impl
 
         <div
           class="relative h-full max-h-[24vh] overflow-y-auto [scrollbar-gutter:stable]"
-          on:dragenter=prevent_defaults
-          on:dragover=prevent_defaults
-          on:dragleave=prevent_defaults
-          on:drop=on_drop
         >
           <Suspense fallback=move || {
               view! { <div class="skeleton h-24 w-full"></div> }
           }>
             <Show
               when=move || { !files().is_empty() }
-              fallback=move || view! { <EmptyWorkspace node_ref=drop_zone_ref set_files=set_files_to_upload chat_id/> }
+              fallback=move || view! { <EmptyWorkspace set_files=set_files_to_upload chat_id/> }
             >
-              <WorkspaceFiles node_ref=drop_zone_ref files=files select_file/>
+              <WorkspaceFiles files select_file set_files=set_files_to_upload />
             </Show>
           </Suspense>
         </div>
@@ -151,13 +136,28 @@ pub fn Workspace(chat_id: ReadSignal<Option<Uuid>>, chats: ChatResource) -> impl
 #[allow(unused_variables)]
 fn EmptyWorkspace(
   chat_id: ReadSignal<Option<Uuid>>,
-  node_ref: NodeRef<Div>,
   set_files: WriteSignal<Vec<File>>,
 ) -> impl IntoView {
+  let drop_zone_ref = create_node_ref::<Div>();
+  let UseDropZoneReturn {
+    is_over_drop_zone,
+    files,
+  } = use_drop_zone(drop_zone_ref);
+
+  create_effect(move |_| {
+    let files = files();
+    if !files.is_empty() {
+      set_files.update(|v| v.extend(files));
+    }
+  });
+
   view! {
     <div
-      node_ref=node_ref
-      class="mt-1 flex cursor-pointer flex-col items-center justify-center space-y-2 rounded-lg border-2 border-dashed text-neutral-content border-neutral-content p-7 text-center transition-colors duration-300 hover:border-primary hover:bg-base-950 hover:text-primary"
+      node_ref=drop_zone_ref
+      class="mt-1 flex cursor-pointer flex-col items-center justify-center space-y-2 rounded-lg border-2 border-dashed text-neutral-content border-neutral-content p-7 text-center transition-colors duration-300"
+      class:border-primary=is_over_drop_zone
+      class:bg-base-950=is_over_drop_zone
+      class:text-primary=is_over_drop_zone
     >
       <FileDialogOpener
         id="emptyfiles"
@@ -176,14 +176,29 @@ fn EmptyWorkspace(
 #[component]
 #[allow(unused_variables)]
 fn WorkspaceFiles(
-  node_ref: NodeRef<Div>,
   files: ReadSignal<Vec<UploadedFile>>,
   #[prop(into)] select_file: Callback<UploadedFile>,
+  set_files: WriteSignal<Vec<File>>,
 ) -> impl IntoView {
+  let drop_zone_ref = create_node_ref::<Div>();
+  let UseDropZoneReturn {
+    is_over_drop_zone,
+    files: dropped_files,
+  } = use_drop_zone(drop_zone_ref);
+
+  create_effect(move |_| {
+    let files = dropped_files();
+    if !files.is_empty() {
+      set_files.update(|v| v.extend(files));
+    }
+  });
   view! {
     <div
-      node_ref=node_ref
+      node_ref=drop_zone_ref
       class="h-full space-y-1 rounded-lg border-2 border-solid border-neutral p-[6px] transition-all duration-100 ease-in-out"
+      class:border-primary=is_over_drop_zone
+      class:bg-base-950=is_over_drop_zone
+      class:text-primary=is_over_drop_zone
     >
       <For each=files key=|f| f.file_name.clone() let:file>
         <div
@@ -197,6 +212,7 @@ fn WorkspaceFiles(
               }
           }
         >
+
           <FileIcon file_type=file.mime_type/>
           <div class="w-full overflox-x-hidden text-ellipsis whitespace-nowrap">{file.file_name}</div>
         </div>
@@ -229,7 +245,13 @@ fn FileDialogOpener(
 
   view! {
     <div>
-      <form action=move || {format!("/api/v1/workspace/{}", chat_id().as_ref().map(|id|id.to_string()).unwrap_or_default())} method="post" enctype="multipart/form-data" >
+      <form
+        action=move || {
+            format!("/api/v1/workspace/{}", chat_id().as_ref().map(|id| id.to_string()).unwrap_or_default())
+        }
+        method="post"
+        enctype="multipart/form-data"
+      >
         <label for=id>
           <FilePlus size class weight/>
         </label>

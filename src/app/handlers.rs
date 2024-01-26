@@ -5,8 +5,8 @@ cfg_if! {
 
 use axum::{
     response::{Response, IntoResponse, Redirect},
-    extract::{Path, State, RawQuery,Query},
-    http::{Request, header::HeaderMap},
+    extract::{Path, State,Query},
+    http::{Request},
     body::Body as AxumBody,
 };
 
@@ -37,10 +37,6 @@ cfg_if! {
 
         tracing::info!("{} {:?}", request.method(), path);
 
-        // handle_server_fns_with_context(path, headers, raw_query, move || {
-        //     provide_context(auth_session.clone());
-        //     provide_context(app_state.pool.clone());
-        // }, request).await
         handle_server_fns_with_context(move || {
             provide_context(auth_session.clone());
             provide_context(app_state.pool.clone());

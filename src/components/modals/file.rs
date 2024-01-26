@@ -70,7 +70,7 @@ pub fn FileModal(
   view! {
     <Modal id="fileModal" show_modal=show_modal>
       <div class="modal-action">
-        <Show when=move || content().is_some() >
+        <Show when=move || content().is_some()>
           <Show when=move || { file_type() == "markdown" }>
             <div class="prose prose-invert w-full max-w-none overflow-auto p-8 pr-[1.5rem] [scrollbar-gutter:stable]">
               <Markdown content=markdown_content/>
@@ -78,66 +78,61 @@ pub fn FileModal(
           </Show>
           <Show when=move || { file_type() == "pdf" }>
             <div class="w-full h-full">
-              <object data=move || {
-                  let UploadedFile { file_name, workspace, .. } = content().unwrap();
-                  format!("/api/v1/workspace/{workspace}/files/{file_name}")
-                } type="application/pdf" width="100%" height="500px">
-                <p>"Your browser does not support PDFs. "<a href=move || {
-                  let UploadedFile { file_name, workspace, .. } = content().unwrap();
-                  format!("/api/v1/workspace/{workspace}/files/{file_name}")
-                }>"Download the PDF"</a>.</p>
+              <object
+                data=move || {
+                    let UploadedFile { file_name, workspace, .. } = content().unwrap();
+                    format!("/api/v1/workspace/{workspace}/files/{file_name}")
+                }
+                type="application/pdf"
+                width="100%"
+                height="500px"
+              >
+                <p>
+                  "Your browser does not support PDFs. "
+                  <a href=move || {
+                      let UploadedFile { file_name, workspace, .. } = content().unwrap();
+                      format!("/api/v1/workspace/{workspace}/files/{file_name}")
+                  }>"Download the PDF"</a> .
+                </p>
               </object>
             </div>
           </Show>
-          <Show when = move || { file_type() == "image" }>
+          <Show when=move || { file_type() == "image" }>
             <div class="w-full h-full">
               <pre>{text_content()}</pre>
             </div>
           </Show>
-          <Show when = move || { file_type() == "image" }>
+          <Show when=move || { file_type() == "image" }>
             <div class="w-full h-full">
               <img
                 class="w-full h-full"
                 src=move || {
-                  let UploadedFile { file_name, workspace, .. } = content().unwrap();
-                  format!("/api/v1/workspace/{workspace}/files/{file_name}")
+                    let UploadedFile { file_name, workspace, .. } = content().unwrap();
+                    format!("/api/v1/workspace/{workspace}/files/{file_name}")
                 }
               />
+
             </div>
           </Show>
           <Show when=move || { file_type() == "audio" }>
             <div class="w-full h-full">
-              <audio
-                class="w-full h-full"
-                controls
-              >
-                { move || {
-                  let UploadedFile { file_name, workspace, mime_type, .. } = content().unwrap();
-                  view! {
-                    <source
-                      src=format!("/api/v1/workspace/{workspace}/files/{file_name}")
-                      type=mime_type
-                    />
-                  }
+              <audio class="w-full h-full" controls>
+                {move || {
+                    let UploadedFile { file_name, workspace, mime_type, .. } = content().unwrap();
+                    view! { <source src=format!("/api/v1/workspace/{workspace}/files/{file_name}") type=mime_type/> }
                 }}
+
               </audio>
             </div>
           </Show>
           <Show when=move || { file_type() == "video" }>
             <div class="w-full h-full">
-              <video
-                class="w-full h-full"
-                controls
-              >
-                { move || {
-                  let UploadedFile { file_name, workspace, mime_type, .. } = content().unwrap();
-                  view! {
-                    <source
-                      src=format!("/api/v1/workspace/{workspace}/files/{file_name}")
-                      type=mime_type
-                    />
-                  }
+              <video class="w-full h-full" controls>
+                {move || {
+                    let UploadedFile { file_name, workspace, mime_type, .. } = content().unwrap();
+                    view! { <source src=format!("/api/v1/workspace/{workspace}/files/{file_name}") type=mime_type/> }
                 }}
+
               </video>
             </div>
           </Show>

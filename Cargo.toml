@@ -59,12 +59,13 @@ leptos_meta = { git = "https://github.com/leptos-rs/leptos", branch = "main", fe
 leptos_router = { git = "https://github.com/leptos-rs/leptos", branch = "main", features = [
   "nightly",
 ] }
+leptos-use = { path = "../../Synphonyte/leptos-use", features = ["serde"] }
 log = "0.4"
 
 markdown = "1.0.0-alpha.16"
 mime_guess = "2"
 
-notify = { version = "6.1.1", optional = true }
+notify = { version = "6", optional = true }
 
 oauth2 = { version = "4", optional = true }
 
@@ -143,6 +144,8 @@ ssr = [
   "leptos/ssr",
   "leptos_meta/ssr",
   "leptos_router/ssr",
+  "leptos-use/axum",
+  "leptos-use/ssr",
   "dep:tracing",
   "dep:tracing-subscriber",
   "dep:sqlx",

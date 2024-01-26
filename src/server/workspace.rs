@@ -94,13 +94,15 @@ async fn watch_files(
         }
       }
     })
-    .expect("unable to set up file watcher");
+    .map_err(Error::Watcher)?;
+
   watcher
     .watch(
       app_state.upload_store.join(chat_id.to_string()).as_path(),
       notify::RecursiveMode::NonRecursive,
     )
-    .expect("unable to start watching files");
+    .map_err(Error::Watcher)?;
+
   std::mem::forget(watcher);
 
   Ok(

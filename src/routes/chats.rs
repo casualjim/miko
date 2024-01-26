@@ -74,7 +74,9 @@ pub async fn delete_chat(id: Uuid) -> Result<(), ServerFnError> {
   info!("Deleting chat with id: {}", id);
   let db = pool()?;
   let app_state = app_state()?;
-  tokio::fs::remove_dir_all(app_state.upload_store.join(id.to_string())).await?;
+  tokio::fs::remove_dir_all(app_state.upload_store.join(id.to_string()))
+    .await
+    .ok();
   Chat::delete(id, &db).await?;
   leptos_axum::redirect("/");
   Ok(())

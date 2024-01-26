@@ -64,6 +64,8 @@ cfg_if! { if #[cfg(feature = "ssr")]{
     Io(#[from] std::io::Error),
     #[error("{0} not found")]
     NotFound(String),
+    #[error("watcher: {0}")]
+    Watcher(#[from] notify::Error),
     // #[error("uninitialized field: {0}")]
     // UninitializedField(#[from] UninitializedFieldError),
   }
@@ -86,6 +88,9 @@ cfg_if! { if #[cfg(feature = "ssr")]{
         Error::InvalidArgument(_e) => StatusCode::BAD_REQUEST,
         Error::Io(_e) => StatusCode::INTERNAL_SERVER_ERROR,
         Error::NotFound(_e) => StatusCode::NOT_FOUND,
+        Error::Watcher(notify::Error{kind: notify::ErrorKind::PathNotFound,..}) => StatusCode::NOT_FOUND,
+        Error::Watcher(notify::Error{kind: notify::ErrorKind::WatchNotFound,..}) => StatusCode::NOT_FOUND,
+        Error::Watcher(_e) => StatusCode::INTERNAL_SERVER_ERROR,
         // Error::UninitializedField(_e) => StatusCode::BAD_REQUEST,
       }
     }

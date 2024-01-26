@@ -3,9 +3,8 @@ mod logout;
 
 pub use file::FileModal;
 use leptos::{html::Div, *};
+use leptos_use::on_click_outside;
 pub use logout::LogoutModal;
-use wasm_bindgen::{closure::Closure, JsCast as _};
-use web_sys::{js_sys::Function, Node};
 
 #[derive(Debug, Default, Clone)]
 pub struct ModalsContext {
@@ -19,61 +18,21 @@ pub struct ModalsContext {
 pub fn Modal(id: &'static str, show_modal: RwSignal<bool>, children: Children) -> impl IntoView {
   let modal_ref = create_node_ref::<Div>();
 
-  create_effect(move |_| {
-    let keyup_listener = Closure::wrap(Box::new(move |event: ev::Event| {
-      let keyboard_event = event
-        .clone()
-        .dyn_into::<leptos::ev::KeyboardEvent>()
-        .unwrap();
-      if show_modal() && keyboard_event.key_code() == 27 {
-        show_modal.set(false);
-      }
-    }) as Box<dyn FnMut(_)>);
-    let keyup = keyup_listener.as_ref().clone().into();
-    keyup_listener.forget();
-
-    let mouseup_listener = Closure::wrap(Box::new(move |event: ev::Event| {
-      let mouse_event = event.clone().dyn_into::<leptos::ev::MouseEvent>().unwrap();
-      if let Some(modal_ref) = modal_ref.get_untracked() {
-        if let Some(target) = mouse_event.target() {
-          let target = target.dyn_ref::<Node>();
-          if !modal_ref.contains(target) {
-            show_modal.set(false);
-          }
-        }
-      }
-    }) as Box<dyn FnMut(_)>);
-    let mouseup: Function = mouseup_listener.as_ref().clone().into();
-    mouseup_listener.forget();
-
-    leptos_dom::document()
-      .add_event_listener_with_callback("keyup", &keyup)
-      .unwrap();
-    leptos_dom::document()
-      .add_event_listener_with_callback("mouseup", &mouseup)
-      .unwrap();
-
-    on_cleanup(move || {
-      leptos_dom::document()
-        .remove_event_listener_with_callback("keyup", &keyup)
-        .unwrap();
-      leptos_dom::document()
-        .remove_event_listener_with_callback("mouseup", &mouseup)
-        .unwrap();
-    });
-  });
+  let _ = on_click_outside(modal_ref, move |_| show_modal.set(false));
 
   let close_modal = move |_| show_modal.set(false);
 
   view! {
     <dialog id=id class="modal backdrop-blur w-screen" class:modal-open=show_modal>
       <div class="modal-box max-w-fit" node_ref=modal_ref>
-        <form method="dialog">
-          <button class="btn btn-sm btn-ghost absolute right-2 top-2" on:click=close_modal>
-            "✕"
-          </button>
-        </form>
-        {children()}
+        <div class="flex flex-col p-2">
+          <form method="dialog flex-1">
+            <button class="btn btn-sm btn-ghost absolute right-2 top-2" on:click=close_modal>
+              "✕"
+            </button>
+          </form>
+          <div class="flex-none mt-3">{children()}</div>
+        </div>
       </div>
     </dialog>
   }

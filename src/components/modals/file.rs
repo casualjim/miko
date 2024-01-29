@@ -83,6 +83,7 @@ pub fn FileModal(
                     let UploadedFile { file_name, workspace, .. } = content().unwrap();
                     format!("/api/v1/workspace/{workspace}/files/{file_name}")
                 }
+
                 type="application/pdf"
                 width="100%"
                 height="500px"

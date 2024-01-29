@@ -1,14 +1,27 @@
-use leptos::*;
+use leptos::{logging::log, *};
 use leptos_router::*;
 use phosphor_leptos::{ArrowRight, IconWeight, UploadSimple};
 use uuid::Uuid;
 
-use crate::{components::logo::Logo, ChatResourceContext};
+use crate::{
+  components::{chat_logs::ChatLogs, example_prompts::ExamplePrompts, logo::Logo},
+  models::ChatLog,
+  ChatResourceContext, OnGoalSubmit,
+};
 
 #[component]
-pub fn Chat(id: Signal<Option<Uuid>>) -> impl IntoView {
-  let ChatResourceContext(chat_resource, create_action, _, _) =
-    expect_context::<ChatResourceContext>();
+pub fn Chat(
+  id: Signal<Option<Uuid>>,
+  is_running: ReadSignal<bool>,
+  is_starting: ReadSignal<bool>,
+  #[prop(into, default = Callback::from(|_|{}))] on_upload: Callback<web_sys::File>,
+) -> impl IntoView {
+  let ChatResourceContext {
+    resource: chat_resource,
+    create_chat: create_action,
+    submit_goal: on_goal_submit,
+    ..
+  } = expect_context::<ChatResourceContext>();
   let should_show_example_prompts = move || id().is_none();
 
   let container_class = move || {
@@ -38,6 +51,45 @@ pub fn Chat(id: Signal<Option<Uuid>>) -> impl IntoView {
     message.update(|msg| *msg = val);
   };
 
+  let (chat_name, set_chat_name) = create_signal("".to_string());
+  let (chat_logs, set_chat_logs) = create_signal(Vec::new());
+  create_effect(move |_| {
+    if let Some(id) = id() {
+      if let Some(Ok(chat)) = chat_resource.get() {
+        let active_chat = chat.iter().find(|chat| chat.id == id).map(|chat| {
+          let name = chat
+            .title
+            .clone()
+            .unwrap_or_else(|| "New Session".to_string());
+          set_chat_name.update(|v| *v = name);
+          set_chat_logs.update(|v| *v = chat.logs.clone());
+          chat
+        });
+        if active_chat.is_none() {
+          set_chat_name.update(|v| v.clear());
+          set_chat_logs.update(|v| v.clear());
+        }
+      }
+    } else {
+      set_chat_logs.update(|v| v.clear());
+    }
+  });
+
+  let handle_goal_submit = move |prompt: String| {
+    if prompt.is_empty() {
+      // TODO: Fix error handling
+      return;
+    }
+    message.update(|msg| msg.clear());
+    on_goal_submit.dispatch(prompt);
+  };
+
+  let input_keydown = move |ev: web_sys::KeyboardEvent| {
+    if ev.key() == "Enter" && !is_starting() && !is_running() {
+      handle_goal_submit(message());
+    }
+  };
+
   view! {
     <main
       class="relative flex h-full w-full flex-col"
@@ -45,14 +97,21 @@ pub fn Chat(id: Signal<Option<Uuid>>) -> impl IntoView {
       class:justify-center=should_show_example_prompts
     >
       <Show
-        when=should_show_example_prompts
-        fallback=move || view! { <Logo class="mb-16 w-10 transition-opacity hover:opacity-50"/> }
+        when=move || !should_show_example_prompts()
+        fallback=move || {
+            view! {
+              <div class="w-full flex flex-col items-center text-center">
+                <Logo class="mt-16 w-16 flex-col text-center"/>
+              </div>
+            }
+        }
       >
-        <div>"Chat logs go here"</div>
+
+        <ChatLogs chat_name chat_logs is_running/>
       </Show>
       <div class=container_class>
         <Show when=should_show_example_prompts>
-          <div>"Example prompts would go here"</div>
+          <ExamplePrompts on_click=handle_goal_submit/>
         </Show>
         <div class=form_class>
           <ActionForm action=create_action>
@@ -62,6 +121,7 @@ pub fn Chat(id: Signal<Option<Uuid>>) -> impl IntoView {
               value=message
               is_running=chat_is_loading
               on_change=update_message_on_change
+              on_keydown=input_keydown
             />
           </ActionForm>
         </div>
@@ -71,28 +131,30 @@ pub fn Chat(id: Signal<Option<Uuid>>) -> impl IntoView {
 }
 
 #[component]
-pub fn TextInput(
+pub fn TextInput<KDF: Fn(web_sys::KeyboardEvent) + 'static>(
   #[prop(into)] name: MaybeSignal<&'static str>,
   #[prop(into)] placeholder: MaybeSignal<&'static str>,
   #[prop(into)] value: RwSignal<String>,
   #[prop(into)] is_running: MaybeSignal<bool>,
   #[prop(optional, into)] disabled: MaybeSignal<bool>,
   #[prop(into)] on_change: Callback<web_sys::Event>,
+  on_keydown: KDF,
 ) -> impl IntoView {
   let can_send = move || !value.get().is_empty();
 
   view! {
     <div class="form-control w-full space-y-1">
-      <div class="flex border-primary border pl-2 m-2 rounded-lg cursor-text hover:border-primary hover:bg-base-300">
-        <button type="button" class="flex-1 hover:text-primary">
+      <div class="flex border-neutral border m-2 rounded-lg cursor-text hover:border-accent">
+        <button type="button" class="flex-1 hover:btn-accent btn-neutral btn btn-square">
           <UploadSimple size="20" class="text-[currentColor]" />
         </button>
         <input
           type="text"
           name=name
-          class="input flex-none border-none bg-transparent outline-none focus:outline-none focus:border-none focus:ring-3"
+          class="input flex-none border-none bg-transparent outline-none focus:outline-none focus:border-none focus:ring-3 w-[40rem]"
           placeholder=placeholder
           on:change=on_change
+          on:keydown=on_keydown
           prop:value=value
           prop:disabled=disabled
           class:cursor-default=disabled
@@ -113,9 +175,9 @@ fn ChatSendButton(
   view! {
     <Show
       when=move || { !is_running() }
-      fallback=move || view! { <span class="loading loading-infinity text-primary"></span> }
+      fallback=move || view! { <span class="loading loading-infinity text-accent"></span> }
     >
-      <button type="submit" class="btn btn-neutral flex-1" prop:disabled=enabled>
+      <button type="submit" class="hover:btn-accent btn btn-neutral btn-square flex-1" prop:disabled=enabled>
         <ArrowRight weight=IconWeight::Bold/>
       </button>
     </Show>

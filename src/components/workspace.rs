@@ -1,5 +1,9 @@
 use gloo_net::eventsource::futures::EventSource;
-use leptos::{html::Div, logging::log, *};
+use leptos::{
+  html::{Div, Label},
+  logging::log,
+  *,
+};
 use leptos_use::{use_drop_zone, UseDropZoneReturn};
 use phosphor_leptos::{File as PhosphorFile, *};
 use uuid::Uuid;
@@ -94,6 +98,8 @@ pub fn Workspace(chat_id: ReadSignal<Option<Uuid>>, chats: ChatResource) -> impl
     show_file_modal.set(true);
   };
 
+  let open_file_picker = create_rw_signal(false);
+
   view! {
     <Show when=move || chat_id().is_some()>
 
@@ -104,17 +110,16 @@ pub fn Workspace(chat_id: ReadSignal<Option<Uuid>>, chats: ChatResource) -> impl
             <FileDialogOpener
               id="titlefiles"
               size="18"
-              class="hover:cursor-pointer hover:text-primary"
+              class="hover:cursor-pointer hover:text-accent"
               set_files=set_files_to_upload
               weight=IconWeight::Bold
               chat_id
+              open_dialog=open_file_picker
             />
           </div>
         </div>
 
-        <div
-          class="relative h-full max-h-[24vh] overflow-y-auto [scrollbar-gutter:stable]"
-        >
+        <div class="relative h-full max-h-[24vh] overflow-y-auto [scrollbar-gutter:stable]">
           <Suspense fallback=move || {
               view! { <div class="skeleton h-24 w-full"></div> }
           }>
@@ -122,7 +127,7 @@ pub fn Workspace(chat_id: ReadSignal<Option<Uuid>>, chats: ChatResource) -> impl
               when=move || { !files().is_empty() }
               fallback=move || view! { <EmptyWorkspace set_files=set_files_to_upload chat_id/> }
             >
-              <WorkspaceFiles files select_file set_files=set_files_to_upload />
+              <WorkspaceFiles files select_file set_files=set_files_to_upload/>
             </Show>
           </Suspense>
         </div>
@@ -151,20 +156,29 @@ fn EmptyWorkspace(
     }
   });
 
+  let open_dialog = create_rw_signal(false);
+
   view! {
     <div
       node_ref=drop_zone_ref
-      class="mt-1 flex cursor-pointer flex-col items-center justify-center space-y-2 rounded-lg border-2 border-dashed text-neutral-content border-neutral-content p-7 text-center transition-colors duration-300"
-      class:border-primary=is_over_drop_zone
-      class:bg-base-950=is_over_drop_zone
-      class:text-primary=is_over_drop_zone
+      class="mt-1 flex cursor-pointer flex-col items-center justify-center space-y-2 rounded-lg border-2 border-dashed text-neutral-content border-neutral-content p-7 text-center transition-colors duration-300 hover:cursor-pointer hover:text-accent hover:border-accent"
+      class:border-accent=is_over_drop_zone
+      class:bg-base-300=is_over_drop_zone
+      class:text-accent=is_over_drop_zone
+      on:click={
+          let open_dialog = open_dialog.clone();
+          move |_| {
+              open_dialog.set(true);
+          }
+      }
     >
       <FileDialogOpener
         id="emptyfiles"
         size="24"
-        class="text-[currentColor] hover:cursor-pointer hover:text-primary"
+        class="text-[currentColor] cursor-pointer"
         set_files
         chat_id
+        open_dialog
       />
       <p class="leading-regular text-xs text-[currentColor]">
         "You currently have no files in your workspace. Drop or click here to add them."
@@ -196,9 +210,9 @@ fn WorkspaceFiles(
     <div
       node_ref=drop_zone_ref
       class="h-full space-y-1 rounded-lg border-2 border-solid border-neutral p-[6px] transition-all duration-100 ease-in-out"
-      class:border-primary=is_over_drop_zone
+      class:border-accent=is_over_drop_zone
       class:bg-base-950=is_over_drop_zone
-      class:text-primary=is_over_drop_zone
+      class:text-accent=is_over_drop_zone
     >
       <For each=files key=|f| f.file_name.clone() let:file>
         <div
@@ -222,14 +236,24 @@ fn WorkspaceFiles(
 }
 
 #[component]
-fn FileDialogOpener(
+pub(super) fn FileDialogOpener(
   id: &'static str,
   size: &'static str,
   class: &'static str,
   chat_id: ReadSignal<Option<Uuid>>,
   set_files: WriteSignal<Vec<File>>,
+  open_dialog: RwSignal<bool>,
   #[prop(into, default = MaybeSignal::Static(IconWeight::Regular))] weight: MaybeSignal<IconWeight>,
 ) -> impl IntoView {
+  let label = create_node_ref::<Label>();
+
+  create_effect(move |_| {
+    let label = label.get().unwrap();
+    if open_dialog() {
+      label.click();
+    }
+  });
+
   let on_change = Callback::new(move |ev: Event| {
     let target = event_target::<HtmlInputElement>(&ev);
     let files = target
@@ -241,6 +265,7 @@ fn FileDialogOpener(
       return;
     }
     set_files.update(|v| v.extend(files.into_iter().map(File::from)));
+    open_dialog.set(false);
   });
 
   view! {
@@ -249,10 +274,11 @@ fn FileDialogOpener(
         action=move || {
             format!("/api/v1/workspace/{}", chat_id().as_ref().map(|id| id.to_string()).unwrap_or_default())
         }
+
         method="post"
         enctype="multipart/form-data"
       >
-        <label for=id>
+        <label node_ref=label for=id>
           <FilePlus size class weight/>
         </label>
         <input id=id name="file" type="file" on:change=on_change style="display:none;"/>

@@ -1,25 +1,28 @@
 -- Add migration script here
-create table if not exists chats (
-  id uuid default gen_random_uuid() primary key,
+CREATE TABLE IF NOT EXISTS chats(
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
   title text,
-  user_id uuid not null references users(id) on delete cascade,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
 );
-create table if not exists logs (
-  id uuid default gen_random_uuid() primary key,
-  chat_id uuid not null references chats(id) on delete cascade,
-  user_id uuid not null references users(id) on delete cascade,
-  title text not null,
+
+CREATE TABLE IF NOT EXISTS logs(
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  chat_id uuid NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
+  "user" text NOT NULL,
+  title text NOT NULL,
   content text,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
 );
-create table if not exists variables (
-  id uuid default gen_random_uuid() primary key,
-  chat_id uuid not null references chats(id) on delete cascade,
-  key text not null,
-  value text not null,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+
+CREATE TABLE IF NOT EXISTS variables(
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  chat_id uuid NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
+  key text NOT NULL,
+  value text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
 );
+

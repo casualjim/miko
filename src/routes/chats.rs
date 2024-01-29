@@ -50,14 +50,15 @@ pub async fn create_chat(id: Uuid) -> Result<(), ServerFnError> {
 #[server(AddChatLog, "/api")]
 pub async fn add_chat_log(
   chat_id: Uuid,
+  user: String,
   title: String,
   content: Option<String>,
 ) -> Result<ChatLog, ServerFnError> {
   let auth = auth()?;
   match auth.current_user {
-    Some(user) => {
+    Some(_) => {
       let db = pool()?;
-      let chat = ChatLog::create(chat_id, user.id, title, content, &db).await?;
+      let chat = ChatLog::create(chat_id, user, title, content, &db).await?;
       Ok(chat)
     }
     None => Err(ServerFnError::ServerError("Not authenticated.".into())),

@@ -1,7 +1,7 @@
 SELECT
   l.id,
   l.chat_id,
-  l.user_id,
+  l."user",
   l.title,
   l.content,
   l.created_at

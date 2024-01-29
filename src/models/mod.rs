@@ -37,8 +37,23 @@ impl CurrentUser {
     }
   }
 
-  pub fn email(&self) -> String {
-    #[allow(clippy::useless_asref)]
-    self.0.as_ref().map(|v| v.email.clone()).unwrap_or_default()
+  pub fn name_opt(&self) -> Option<String> {
+    if let Some(user) = self.0.as_ref() {
+      Some(user.name.clone())
+    } else {
+      None
+    }
+  }
+
+  pub fn name_or<I: Into<String>>(&self, default_value: I) -> String {
+    if let Some(user) = self.0.as_ref() {
+      user.name.clone()
+    } else {
+      default_value.into()
+    }
+  }
+
+  pub fn email(&self) -> Option<String> {
+    self.0.as_ref().map(|v| v.email.clone())
   }
 }

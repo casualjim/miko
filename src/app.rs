@@ -1,10 +1,13 @@
 pub mod handlers;
 pub mod state;
 use cfg_if::cfg_if;
-use leptos::*;
+use leptos::{logging::log, *};
 use leptos_meta::*;
 use leptos_router::*;
-use leptos_use::storage::{use_local_storage, StringCodec};
+use leptos_use::{
+  storage::{use_local_storage, use_local_storage_with_options, StringCodec, UseStorageOptions},
+  use_media_query,
+};
 use uuid::Uuid;
 
 pub const LEPTOS_OUTPUT_NAME: &str = env!("LEPTOS_OUTPUT_NAME");
@@ -12,12 +15,12 @@ pub const LEPTOS_OUTPUT_NAME: &str = env!("LEPTOS_OUTPUT_NAME");
 // pub use state::*;
 use crate::{
   components::{layout::*, modals::*},
-  create_chat_resource, create_chat_state,
+  create_chat_details_state, create_chat_resource, create_chat_state,
   error_template::{AppError, ErrorTemplate},
-  models::CurrentUser,
+  models::{CurrentUser, User},
   pages::*,
   routes::authn::*,
-  ShowFileModal,
+  ShowChatDetailsModal, ShowFileModal,
 };
 
 cfg_if! {
@@ -47,7 +50,10 @@ cfg_if! {
 pub fn App() -> impl IntoView {
   let logout = create_server_action::<Logout>();
 
-  let user = create_resource(move || logout.version().get(), move |_| get_user());
+  let user = create_resource(
+    move || logout.version().get(),
+    |_| async { get_user().await.ok().flatten() },
+  );
   let (current_user, set_current_user) = create_signal(CurrentUser::default());
   provide_context(current_user);
 
@@ -59,30 +65,29 @@ pub fn App() -> impl IntoView {
   let (selected_file, set_selected_file) = create_signal(None);
   provide_context(ShowFileModal(show_file_modal, set_selected_file));
 
-  let getcurrentuser = create_memo(move |_| {
-    user
-      .get()
-      .map(|user| user.ok().flatten())
-      .unwrap_or_default()
-  });
+  let ShowChatDetailsModal(show_chat_details, chat_details_message, chat_status) =
+    create_chat_details_state();
 
-  create_effect(move |_| {
-    let current_user = getcurrentuser();
-    set_current_user(CurrentUser(current_user));
-  });
+  // let getcurrentuser = create_memo(move |_| user.get().flatten());
+
+  // create_effect(move |_| {
+  //   let current_user = getcurrentuser();
+  //   set_current_user.update(|v| *v = CurrentUser(current_user));
+  // });
 
   let (is_dark, set_is_dark, _) = use_local_storage::<bool, StringCodec>("miko-dark-mode");
 
   // Provides context that manages stylesheets, titles, meta tags, etc.
   provide_meta_context();
 
-  let dark_mode = move || {
-    if is_dark() {
+  let pick_theme = move |is_dark| {
+    if is_dark {
       "night"
     } else {
       "pastel"
     }
   };
+
   let on_toggle_theme = move |_| {
     set_is_dark.update(|value| *value = !*value);
   };
@@ -90,7 +95,7 @@ pub fn App() -> impl IntoView {
   let (chat_id, set_chat_id) = create_signal(None);
 
   view! {
-    <Html lang="en" class="h-full tracking-wide" attr:data-theme=dark_mode/>
+    <Html lang="en" class="h-full tracking-wide" attr:data-theme=move || pick_theme(is_dark()) />
 
     <Stylesheet id="leptos" href=format!("/pkg/{}.css", LEPTOS_OUTPUT_NAME)/>
 
@@ -147,23 +152,42 @@ pub fn App() -> impl IntoView {
 
     <Body class="h-full"/>
 
-    <Transition fallback=|| view!{ <div class="skeleton w-full h-full"></div> } >
-      // content for this welcome page
-      <Router fallback=|| {
-          let mut outside_errors = Errors::default();
-          outside_errors.insert_with_default_key(AppError::NotFound);
-          view! { <ErrorTemplate outside_errors/> }.into_view()
-      }>
-        <LogoutModal logout=logout show_modal=show_logout_modal/>
-        <FileModal show_modal=show_file_modal content=selected_file/>
-        <SidebarLayoutWithHeader chat_id show_logout=show_logout_modal is_dark on_toggle_theme>
-            <ErrorBoundary fallback=|errors| view! { <ErrorTemplate errors=errors/> }>
-              <MainContent set_chat_id/>
-            </ErrorBoundary>
-        </SidebarLayoutWithHeader>
-      </Router>
-    </Transition>
+    <Router fallback=|| {
+        let mut outside_errors = Errors::default();
+        outside_errors.insert_with_default_key(AppError::NotFound);
+        view! { <ErrorTemplate outside_errors/> }.into_view()
+    }>
+      <Show when=|| false>
+        <div class="bg-accent text-accent-content border-accent"></div>
+        <div class="bg-primary text-primary-content border-primary"></div>
+        <div class="bg-secondary text-secondary-content border-secondary"></div>
+      </Show>
+      <Suspense><UserAuth user set_current_user/></Suspense>
+      <Transition fallback=|| view! { <div class="skeleton w-full h-full"></div> }>
+        <ErrorBoundary fallback=|errors| view! { <ErrorTemplate errors=errors/> }>
+          <LogoutModal logout=logout show_modal=show_logout_modal/>
+          <FileModal show_modal=show_file_modal content=selected_file/>
+          <ChatDetailsModal show_modal=show_chat_details message=chat_details_message status=chat_status/>
+          <SidebarLayoutWithHeader chat_id show_logout=show_logout_modal is_dark on_toggle_theme>
+            <MainContent set_chat_id/>
+          </SidebarLayoutWithHeader>
+        </ErrorBoundary>
+      </Transition>
+    </Router>
   }
+}
+
+#[component]
+fn UserAuth(
+  user: Resource<usize, Option<User>>,
+  set_current_user: WriteSignal<CurrentUser>,
+) -> impl IntoView {
+  create_effect(move |_| {
+    if let Some(user) = user.get() {
+      set_current_user.update(|v| *v = CurrentUser(user));
+    }
+  });
+  view! {}
 }
 
 #[component]
@@ -171,6 +195,7 @@ fn MainContent(set_chat_id: WriteSignal<Option<Uuid>>) -> impl IntoView {
   let user = expect_context::<ReadSignal<CurrentUser>>();
 
   let is_authenticated = move || user().is_authenticated();
+
   view! {
     <Routes>
       <Route

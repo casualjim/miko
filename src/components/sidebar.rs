@@ -30,7 +30,11 @@ pub fn Sidebar(
   let edit_chat = chat_state.edit_chat;
   let active_chat = chat_state.active_chat;
 
-  let ChatResourceContext(chats, create_chat, _, _) = expect_context();
+  let ChatResourceContext {
+    resource: chats,
+    create_chat,
+    ..
+  } = expect_context();
 
   let chats_loading = chats.loading();
 
@@ -59,8 +63,8 @@ pub fn Sidebar(
         <div class="flex h-full flex-col justify-between">
           <div class:space-y-6=is_authenticated>
             <header on:click=move |_| {navigate("/", Default::default()) }>
-              <div class="flex flex-row h-full items-center text-accent text-lg lg:text-2xl hover:cursor-pointer">
-                <Logo class="w-[75px] h-[75px] cursor-pointer p-4 transition-opacity hover:opacity-50" />
+              <div class="flex flex-row h-full items-center text-neutral-content text-lg lg:text-2xl hover:cursor-pointer transition-opacity hover:opacity-50">
+                <Logo class="w-[75px] h-[75px] cursor-pointer p-4" />
                 <h1>"Miko"</h1>
               </div>
             </header>
@@ -73,8 +77,8 @@ pub fn Sidebar(
                     <Show when=move || !chats_loading()>
                       <ActionForm action=create_chat>
                         <input type="hidden" name="id" prop:value=move || Uuid::new_v4().to_string() />
-                        <button class="btn-link text-neutral-content hover:text-primary">
-                          <NotePencil size="18" weight=IconWeight::Bold />
+                        <button class="btn-link text-neutral-content hover:text-accent">
+                          <NotePencil class="text-neutral-content hover:text-accent" size="18" weight=IconWeight::Bold />
                         </button>
                       </ActionForm>
                     </Show>
@@ -98,11 +102,14 @@ fn ChatList(
   edit_chat: RwSignal<Option<EditChat>>,
   active_chat: RwSignal<Option<Uuid>>,
 ) -> impl IntoView {
-  let ChatResourceContext(chat_resource, _, _, _) = expect_context::<ChatResourceContext>();
+  let ChatResourceContext {
+    resource: chat_resource,
+    ..
+  } = expect_context::<ChatResourceContext>();
 
   let empty_chats = move || {
     view! {
-      <div class="mt-1 flex cursor-pointer flex-col items-center justify-center space-y-2 rounded-lg border-2 border-dashed text-neutral-content border-neutral-content p-7 text-center transition-colors duration-300 hover:border-primary hover:bg-base-950 hover:text-primary">
+      <div class="mt-1 flex cursor-pointer flex-col items-center justify-center space-y-2 rounded-lg border-2 border-dashed text-neutral-content border-neutral-content p-7 text-center transition-colors duration-300 hover:border-accent hover:bg-base-950 hover:text-accent">
         <NotePencil size="24" class="text-[currentColor]"/>
         <p class="leading-regular text-xs text-[currentColor]">"You currently have no chats"</p>
       </div>
@@ -137,7 +144,12 @@ fn ChatListItems(
   edit_chat: RwSignal<Option<EditChat>>,
   active_chat: RwSignal<Option<Uuid>>,
 ) -> impl IntoView {
-  let ChatResourceContext(chat_resource, _, delete_chat, update_title) = expect_context();
+  let ChatResourceContext {
+    resource: chat_resource,
+    delete_chat,
+    update_title,
+    ..
+  } = expect_context();
 
   view! {
     {move || {
@@ -169,6 +181,7 @@ fn ChatListItem(
   let is_selected_chat = move || edit_chat().as_ref().map_or(false, |chat| chat.id == id);
   let (is_hovering, set_is_hovering) = create_signal(false);
   let input_ref = create_node_ref::<Input>();
+  let navigate = use_navigate();
 
   let submit_form = move |ev: SubmitEvent| {
     ev.prevent_default();
@@ -203,14 +216,17 @@ fn ChatListItem(
     <div
       class="relative w-full cursor-pointer overflow-x-hidden text-ellipsis whitespace-nowrap rounded p-1 text-sm transition-colors duration-300"
       class:pr-14=is_active_selected_chat
-      class:bg-base-300=is_active_selected_chat
-      class:text-accent=is_hovering
-      class:bg-base-200=is_hovering
+      class:bg-accent=is_active_selected_chat
+      class:text-accent-content=is_active_selected_chat
+      class:text-secondary-content=is_hovering
+      class:bg-secondary=is_hovering
     >
       <Show
         when=is_selected_chat
-        fallback=move || {
-            let navigate = use_navigate();
+        fallback={
+          let navigate = navigate.clone();
+          move || {
+            let navigate = navigate.clone();
             let detail_url = format!("/chat/{}", id);
             view! {
               <div
@@ -227,7 +243,7 @@ fn ChatListItem(
                 {title()}
               </div>
             }
-        }
+        }}
       >
 
         <div>
@@ -249,7 +265,7 @@ fn ChatListItem(
         <div class="absolute right-1 top-1/2 -translate-y-1/2 transform animate-fade-in items-center flex flex-row">
           <form class="px-1">
             <button
-              class="btn-link text-neutral-content hover:text-primary"
+              class="btn-link text-neutral-content hover:text-accent"
               on:click={
                   move |ev| {
                       let title = title().unwrap_or_else(|| "New Session".to_string());
@@ -268,7 +284,7 @@ fn ChatListItem(
             </button>
           </form>
           <ActionForm action=delete_chat>
-            <button class="btn-link text-neutral-content hover:text-primary">
+            <button class="btn-link text-neutral-content hover:text-accent">
               <TrashSimple size="16" weight=IconWeight::Bold/>
             </button>
             <input type="hidden" name="id" prop:value=chat.id.to_string()/>

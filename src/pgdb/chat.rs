@@ -64,7 +64,7 @@ impl From<(Chat, Vec<Message>, Vec<Variable>, Vec<Log>)> for AppChat {
 pub struct Log {
   pub id: Uuid,
   pub chat_id: Uuid,
-  pub user_id: Uuid,
+  pub user: String,
   pub title: String,
   pub content: Option<String>,
   pub created_at: DateTime<Utc>,
@@ -75,8 +75,9 @@ impl From<Log> for AppChatLog {
     AppChatLog {
       title: value.title,
       content: value.content,
-      user_id: value.user_id,
+      user: value.user,
       color: None,
+      created_at: value.created_at,
     }
   }
 }
@@ -86,10 +87,10 @@ impl From<AppChatLog> for Log {
     Self {
       id: Uuid::new_v4(),
       chat_id: Uuid::new_v4(),
-      user_id: value.user_id,
+      user: value.user,
       title: value.title,
       content: value.content,
-      created_at: Utc::now(),
+      created_at: value.created_at,
     }
   }
 }
@@ -269,7 +270,7 @@ impl Chat {
 impl Log {
   pub async fn create(
     chat_id: Uuid,
-    user_id: Uuid,
+    user: String,
     title: String,
     content: Option<String>,
     pool: &PgPool,
@@ -278,12 +279,26 @@ impl Log {
       Log,
       "queries/logs/add_new.sql",
       chat_id,
-      user_id,
+      user,
       title,
       content
     )
     .fetch_one(pool)
     .await?;
     Ok(log.into())
+  }
+
+  pub async fn list(chat_id: Uuid, pool: &PgPool) -> Result<Vec<AppChatLog>> {
+    let mut logs =
+      sqlx::query_file_as!(Log, "queries/logs/get_for_chat.sql", chat_id).fetch_many(pool);
+
+    let mut res = vec![];
+    while let Some(log) = logs.try_next().await? {
+      if let Either::Right(log) = log {
+        res.push(log.into());
+      }
+    }
+
+    Ok(res)
   }
 }

@@ -8,9 +8,11 @@ pub fn AccountDropdown(show_logout: RwSignal<bool>) -> impl IntoView {
   let user = expect_context::<ReadSignal<CurrentUser>>();
   let is_authenticated = move || user().is_authenticated();
   view! {
-    <Show when=is_authenticated fallback=move || view! { <GuestDropdown/> }>
-      <UserDropdown user=user show_logout=show_logout/>
-    </Show>
+    <Transition fallback=|| view! { <div class="skeleton w-full h-full"></div> }>
+      <Show when=is_authenticated fallback=move || view! { <GuestDropdown/> }>
+        <UserDropdown user=user show_logout=show_logout/>
+      </Show>
+    </Transition>
   }
 }
 
@@ -31,14 +33,14 @@ fn UserDropdown(user: ReadSignal<CurrentUser>, show_logout: RwSignal<bool>) -> i
             when=move || { picture().is_some() }
             fallback=move || view! { <div class="h-8 w-8 min-w-[2rem] rounded-full bg-primary"></div> }
           >
-            <img src=picture() width="32" height="32" class="h-8 w-8 min-w-[2rem] rounded-full bg-primary"/>
+            <img prop:src=picture width="32" height="32" class="h-8 w-8 min-w-[2rem] rounded-full bg-primary"/>
           </Show>
           <div class="w-full max-w-[124px] space-y-1 overflow-x-hidden">
             <div class="w-full overflow-hidden text-ellipsis whitespace-nowrap text-sm font-semibold leading-none">
-              {name()}
+              {name}
             </div>
             <div class="w-full overflow-hidden text-ellipsis whitespace-nowrap text-[11px] leading-none text-gray-400">
-              {email()}
+              {email}
             </div>
           </div>
         </div>

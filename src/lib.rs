@@ -1,5 +1,6 @@
 mod api;
 mod contexts;
+mod hooks;
 pub mod models;
 mod routes;
 #[cfg(feature = "ssr")] pub mod server;

@@ -1,6 +1,8 @@
 mod account_dropdown;
 pub mod chat;
+mod chat_logs;
 pub mod daisyui;
+mod example_prompts;
 pub mod footer;
 pub mod header;
 pub mod layout;

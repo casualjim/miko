@@ -267,8 +267,9 @@ pub struct FunctionCall {
 pub struct ChatLog {
   pub title: String,
   pub content: Option<String>,
-  pub user_id: Uuid,
+  pub user: String,
   pub color: Option<String>,
+  pub created_at: DateTime<Utc>,
 }
 
 #[derive(Clone, Serialize, Default, Debug, Deserialize, PartialEq)]
@@ -317,8 +318,12 @@ cfg_if! {
     }
 
     impl ChatLog {
-      pub async fn create(chat_id: Uuid, user_id: Uuid, title: String, content: Option<String>, pool: &PgPool) -> Result<ChatLog> {
-        SqlChatLog::create(chat_id, user_id, title, content, pool).await
+      pub async fn create(chat_id: Uuid, user: String, title: String, content: Option<String>, pool: &PgPool) -> Result<ChatLog> {
+        SqlChatLog::create(chat_id, user, title, content, pool).await
+      }
+
+      pub async fn list(chat_id: Uuid, pool: &PgPool) -> Result<Vec<ChatLog>> {
+        SqlChatLog::list(chat_id, pool).await
       }
     }
   }

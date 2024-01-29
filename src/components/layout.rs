@@ -39,12 +39,12 @@ pub fn SidebarLayoutWithHeader(
   let (sidebar_open, set_sidebar_open) = create_signal(true);
   let (close_button_hover, set_close_button_hover) = create_signal(false);
 
-  let shared_css = "fixed bottom-0 left-0 top-0 z-10 h-full border-r-2 bg-base-900 transition-all duration-300 ease-in-out md:relative border-base-800";
+  let shared_css = "fixed bottom-0 left-0 top-0 z-10 h-full border-r-2 bg-base-100 transition-all duration-300 ease-in-out md:relative border-neutral";
   let clazz = move || {
     if sidebar_open() {
       format!("{shared_css} w-[calc(100%-35px)] md:w-sidebar md:min-w-sidebar")
     } else {
-      format!("{} w-0 min-w-0 border-none shadow-none", shared_css)
+      format!("{shared_css} w-0 min-w-0 border-none shadow-none")
     }
   };
 
@@ -87,7 +87,7 @@ fn CloseSidebarButton(
 
   let clazz = move || {
     if is_hovering() {
-      "stroke-white"
+      "stroke-accent"
     } else {
       "stroke-neutral-content"
     }

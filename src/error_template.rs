@@ -10,12 +10,23 @@ use crate::components::layout::SingleLayout;
 pub enum AppError {
   #[error("Not Found")]
   NotFound,
+  #[error("server: {0}")]
+  ServerError(ServerFnError),
 }
 
 impl AppError {
   pub fn status_code(&self) -> StatusCode {
     match self {
       AppError::NotFound => StatusCode::NOT_FOUND,
+      AppError::ServerError(server_error) => Self::status_code_from_server_fn_error(server_error),
+    }
+  }
+
+  pub fn status_code_from_server_fn_error(error: &ServerFnError) -> StatusCode {
+    match error {
+      ServerFnError::MissingArg(_) => StatusCode::BAD_REQUEST,
+      ServerFnError::Args(_) => StatusCode::BAD_REQUEST,
+      _ => StatusCode::INTERNAL_SERVER_ERROR,
     }
   }
 }

@@ -2,6 +2,12 @@ const SIDEBAR_WIDTH = 320;
 
 module.exports = {
   content: ["*.html", "./src/**/*.rs",],
+  safeList: [
+    "bg-primary",
+    "text-primary-content",
+    "bg-secondary",
+    "text-secondary-content",
+  ],
   theme: {
     extend: {
       typography: () => ({
@@ -43,7 +49,7 @@ module.exports = {
   },
   daisyui: {
     logs: false,
-    themes: ["night", "pastel"]
+    themes: ["night", "pastel", "fantasy", "light", "dark"]
   },
   plugins: [
     require("@tailwindcss/typography"),
